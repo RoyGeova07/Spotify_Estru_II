@@ -60,19 +60,19 @@ MenuInicio::MenuInicio(QWidget *parent)
 
 void MenuInicio::abrirRegistroUsuario()
 {
+
     this->close();
-    RegistroUsuario*registro=new RegistroUsuario(this);
-    registro->exec();
-    this->show();
+    RegistroUsuario*r=new RegistroUsuario(this);
+    r->show();
 
 }
 
 void MenuInicio::abrirRegistroArtista()
 {
+
     this->close();
-    RegistroArtista*registro=new RegistroArtista(nullptr);
-    registro->exec();
-    this->show();
+    RegistroArtista*r=new RegistroArtista(nullptr);
+    r->show();
 
 }
 
@@ -81,8 +81,7 @@ void MenuInicio::abrirLogin()
 
     this->close();
     LogIn*log=new LogIn(this);
-    log->exec();
-    this->show();
+    log->show();
 
 }
 

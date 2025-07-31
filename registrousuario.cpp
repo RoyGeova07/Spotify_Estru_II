@@ -7,12 +7,13 @@
 #include<QDate>
 #include<QMessageBox>
 #include"home.h"
+#include"menuinicio.h"
 
 RegistroUsuario::RegistroUsuario(QWidget *parent) : QDialog(parent)
 {
 
     setWindowTitle("Registro de Usuario");
-    setFixedSize(520, 500);
+    setFixedSize(520, 550);
 
     txtNombreUsuario = new QLineEdit;
     txtContrasena = new QLineEdit;
@@ -50,6 +51,12 @@ RegistroUsuario::RegistroUsuario(QWidget *parent) : QDialog(parent)
 
     comboGeneroMusical = new QComboBox;
     comboGeneroMusical->addItems({"Pop", "Rock", "Reguetón", "Electrónica", "Cristianos", "Clásicas"});
+
+    dateNacimiento=new QDateEdit;
+    dateNacimiento->setCalendarPopup(true);//con esto se activa el calendario
+    dateNacimiento->setDisplayFormat("dd/MM/yyyy");
+    dateNacimiento->setMaximumDate(QDate::currentDate().addYears(-10));//solo mayores de 10 añitos
+    dateNacimiento->setMinimumDate(QDate::currentDate().addYears(-100));//un rango sensato
 
     vistaPreviaImagen = new QLabel("Sin imagen");
     vistaPreviaImagen->setFixedSize(120, 120);
@@ -98,6 +105,8 @@ RegistroUsuario::RegistroUsuario(QWidget *parent) : QDialog(parent)
     formLayout->addWidget(new QLabel("Contraseña:")); formLayout->addWidget(txtContrasena);
     formLayout->addWidget(new QLabel("País de Origen:")); formLayout->addWidget(comboPais);
     formLayout->addWidget(new QLabel("Género Musical:")); formLayout->addWidget(comboGeneroMusical);
+    formLayout->addWidget(new QLabel("Fecha de Nacimiento:"));
+    formLayout->addWidget(dateNacimiento);
 
     // Imagen
     formLayout->addSpacing(10);
@@ -142,24 +151,40 @@ void RegistroUsuario::SeleccionarImagen()
 
 void RegistroUsuario::RegistrarUsuario()
 {
-    QString nombre = txtNombreUsuario->text();
-    QString contrasena = txtContrasena->text();
-    QString pais = comboPais->currentText();
-    QString genero = comboGeneroMusical->currentText();
-    QString rutaImagen = txtRutaImagen->text();
 
-    if(nombre.isEmpty()||contrasena.isEmpty()||pais.isEmpty()||genero.isEmpty()||rutaImagen.isEmpty())
+    QString nombre=txtNombreUsuario->text();
+    QString contrasena=txtContrasena->text();
+    QString pais=comboPais->currentText();
+    QString genero=comboGeneroMusical->currentText();
+    QString rutaImagen= txtRutaImagen->text();
+    QDate nacimiento=dateNacimiento->date();
+
+    if(nombre.isEmpty()||contrasena.isEmpty()||pais.isEmpty()||genero.isEmpty()||rutaImagen.isEmpty()||nacimiento.isNull())
     {
+
         QMessageBox::warning(this, "Campos incompletos", "Por favor completa todos los campos obligatorios.");
         return;
+
     }
 
     QDate hoy=QDate::currentDate();
+    QVector<Usuario> usuarios=gestorUsuarios.leerUsuarios();
 
-    if(!gestorUsuarios.registrarUsuario(nombre, contrasena, genero, rutaImagen, hoy, false))
+    int idGenerado=1;
+    for(const Usuario &a:usuarios)
     {
 
-        QMessageBox::warning(this, "Registro fallido", "El nombre de usuario ya esta en uso.");
+        if(a.getId()>=idGenerado)
+            idGenerado=a.getId()+1;;
+
+    }
+
+    Usuario usuario(idGenerado,nombre,contrasena,nacimiento,hoy,genero,rutaImagen,false,true);
+
+    if(!gestorUsuarios.registrarUsuario(nombre, contrasena, nacimiento,genero, rutaImagen, hoy, false))
+    {
+
+        QMessageBox::warning(this, "Registro fallido", "El nombre de usuario ya está en uso.");
         return;
 
     }
@@ -169,9 +194,8 @@ void RegistroUsuario::RegistrarUsuario()
     lblResultado->setStyleSheet("color: green");
     lblResultado->setText("Usuario registrado correctamente.");
 
-    Home*h=new Home(this);
-    this->hide();
-    h->exec();
+    Home*h=new Home(usuario,nullptr);
+    h->show();
     this->close();
 
 }
@@ -179,6 +203,8 @@ void RegistroUsuario::RegistrarUsuario()
 void RegistroUsuario::RegresarAlMenu()
 {
 
+    MenuInicio*m=new MenuInicio(nullptr);
+    m->show();
     this->close();
 
 }

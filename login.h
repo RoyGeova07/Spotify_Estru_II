@@ -20,6 +20,8 @@ private:
 
 private slots:
     void validarCredenciales();
+    void volverr();
+
 };
 
 #endif // LOGIN_H

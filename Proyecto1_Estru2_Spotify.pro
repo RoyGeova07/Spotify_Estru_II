@@ -10,28 +10,38 @@ CONFIG += c++17
 
 SOURCES += \
     artista.cpp \
+    cancion.cpp \
     gestorartistas.cpp \
+    gestorcanciones.cpp \
     gestorusuarios.cpp \
     home.cpp \
     login.cpp \
     main.cpp \
     mainwindow.cpp \
+    menuadmin.cpp \
     menuinicio.cpp \
     registroartista.cpp \
     registrousuario.cpp \
-    usuario.cpp
+    subir_cancion.cpp \
+    usuario.cpp \
+    vistapreviaimagen.cpp
 
 HEADERS += \
     artista.h \
+    cancion.h \
     gestorartistas.h \
+    gestorcanciones.h \
     gestorusuarios.h \
     home.h \
     login.h \
     mainwindow.h \
+    menuadmin.h \
     menuinicio.h \
     registroartista.h \
     registrousuario.h \
-    usuario.h
+    subir_cancion.h \
+    usuario.h \
+    vistapreviaimagen.h
 
 FORMS += \
     mainwindow.ui

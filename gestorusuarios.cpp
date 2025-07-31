@@ -3,6 +3,8 @@
 #include<QDataStream>
 #include<QDebug>
 #include"usuario.h"
+#include<QDir>
+#include<QMessageBox>
 
 //QDataStream me servira para serializar y deserializar datos binarios desde y hacia un objeto QIODevice
 
@@ -20,6 +22,7 @@ int GestorUsuarios::generarNuevoId()
 
 QVector<Usuario> GestorUsuarios::leerUsuarios()
 {
+
     QVector<Usuario> usuarios;
     QFile archivo(ArchivoUsuarios);
     if(!archivo.open(QIODevice::ReadOnly)) return usuarios;
@@ -29,11 +32,12 @@ QVector<Usuario> GestorUsuarios::leerUsuarios()
     {
         int id;
         QString nombre, contra, genero, foto;
-        QDate fecha;
+        QDate fecha,fechaNacimiento;
         bool esAdmin, activo;
 
-        in >> id >> nombre >> contra >> fecha >> genero >> foto >> esAdmin >> activo;
-        Usuario u(id, nombre, contra, fecha, genero, foto, esAdmin, activo);
+        in >> id >> nombre >> contra >> fechaNacimiento>>fecha >> genero >> foto >> esAdmin >> activo;
+
+        Usuario u(id, nombre, contra, fechaNacimiento,fecha, genero, foto, esAdmin, activo);
         usuarios.append(u);
     }
 
@@ -42,20 +46,24 @@ QVector<Usuario> GestorUsuarios::leerUsuarios()
 }
 
 
-bool GestorUsuarios::registrarUsuario(const QString &nombreUsuario, const QString &contrasena,const QString &generoFavorito, const QString &rutaFoto,const QDate &fecha, bool esAdmin)
+bool GestorUsuarios::registrarUsuario(const QString &nombreUsuario, const QString &contrasena,const QDate &fechaNacimiento,const QString &generoFavorito, const QString &rutaFoto,const QDate &fecha, bool esAdmin)
 {
     QVector<Usuario>usuarios=leerUsuarios();
+
+    //LEA A TODOS LOS USUARIOS DEL ARCHIVO BINARIOZZZZ
+    QString nombreLimpio=nombreUsuario.trimmed().toLower();
 
 
     for(const Usuario&u:usuarios)
     {
-        if(u.getNombreUsuario().toLower()==nombreUsuario.toLower())
+
+        if(u.getNombreUsuario().trimmed().toLower()==nombreLimpio)
         {
 
-            qWarning()<<"El nombre de usuario ya esta en uso.";
             return false;
 
         }
+
     }
 
     int NuevoID=generarNuevoId();
@@ -69,7 +77,7 @@ bool GestorUsuarios::registrarUsuario(const QString &nombreUsuario, const QStrin
         }
     }
 
-    Usuario nuevo(NuevoID, nombreUsuario, contrasena, fecha, generoFavorito, rutaFoto, esAdmin, true);
+    Usuario nuevo(NuevoID, nombreUsuario, contrasena,fechaNacimiento,fecha, generoFavorito, rutaFoto, esAdmin, true);
 
     QFile archivo(ArchivoUsuarios);
     if(!archivo.open(QIODevice::Append))
@@ -81,9 +89,40 @@ bool GestorUsuarios::registrarUsuario(const QString &nombreUsuario, const QStrin
     }
 
     QDataStream out(&archivo);
-    out << nuevo.getId()<< nuevo.getNombreUsuario()<< nuevo.getContrasena()<< nuevo.getFechaRegistro()<< nuevo.getGeneroFavorito()<< nuevo.getRutaFoto()<< nuevo.getEsAdmin()<< nuevo.estaActivo();
+    out << nuevo.getId()<< nuevo.getNombreUsuario()<< nuevo.getContrasena()<< nuevo.getFechaNacimiento()<<nuevo.getFechaRegistro()<< nuevo.getGeneroFavorito()<< nuevo.getRutaFoto()<< nuevo.getEsAdmin()<< nuevo.estaActivo();
 
     archivo.close();
+
+    QString baseDir="Publico";
+    QDir dir;
+
+    if(!dir.exists(baseDir))
+    {
+
+        dir.mkdir(baseDir);
+
+    }
+
+    QString CarpetaUsuario=baseDir+"/Usuario_"+nombreUsuario;
+
+    if(!dir.exists(CarpetaUsuario))
+    {
+
+        if(dir.mkdir(CarpetaUsuario))
+        {
+
+            dir.mkdir(CarpetaUsuario+"/canciones");
+            dir.mkdir(CarpetaUsuario+"/playlist");
+            dir.mkdir(CarpetaUsuario+"/favoritos");
+
+        }else{
+
+            qWarning()<<"NO SE PUDO CREAR LA CARPETA DE USUARIO";
+
+        }
+
+    }
+
     return true;
 }
 

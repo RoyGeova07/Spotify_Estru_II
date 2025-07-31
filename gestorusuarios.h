@@ -3,6 +3,7 @@
 
 #include"usuario.h"
 #include<QVector>
+#include<QDate>
 
 class GestorUsuarios
 {
@@ -17,7 +18,7 @@ private:
 public:
     GestorUsuarios();
 
-    bool registrarUsuario(const QString &nombreUsuario, const QString &contrasena,const QString &generoFavorito,const QString &rutaFoto,const QDate& fecha ,bool esAdmin);
+    bool registrarUsuario(const QString &nombreUsuario, const QString &contrasena,const QDate &fechaNacimiento,const QString &generoFavorito,const QString &rutaFoto,const QDate& fecha ,bool esAdmin);
     QVector<Usuario> leerUsuarios();
     bool validarLogin(const QString &nombreUsuario, const QString &contrasena, Usuario &usuarioEncontrado);
 

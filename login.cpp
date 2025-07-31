@@ -8,6 +8,9 @@
 #include <QLineEdit>
 #include <QPushButton>
 #include <QLabel>
+#include"PantallaAdmin.h"
+#include"menuadmin.h"
+#include"menuinicio.h"
 
 LogIn::LogIn(QWidget *parent) : QDialog(parent)
 {
@@ -38,7 +41,7 @@ LogIn::LogIn(QWidget *parent) : QDialog(parent)
     layout->addWidget(btnVolver);
 
     connect(btnIniciar,&QPushButton::clicked,this,&LogIn::validarCredenciales);
-    connect(btnVolver,&QPushButton::clicked,this,&LogIn::close);
+    connect(btnVolver,&QPushButton::clicked,this,&LogIn::volverr);
 }
 
 void LogIn::validarCredenciales()
@@ -59,26 +62,37 @@ void LogIn::validarCredenciales()
     Artista artista;
     if(gestorArtistas.validarLogIn(nombre, contrasena, artista))
     {
+
         QMessageBox::information(this, "Bienvenido", QString("🎵 ¡Bienvenido artista '%1'!").arg(artista.getNombreArtistico()));
-        this->hide();
-        Home* h=new Home(this);  //
-        h->exec();
+        MenuAdmin*h=new MenuAdmin(artista,nullptr);
+        h->show();
         this->close();
         return;
+
     }
 
     GestorUsuarios gestorUsuarios;
     Usuario usuario;
     if(gestorUsuarios.validarLogin(nombre, contrasena, usuario))
     {
+
         QMessageBox::information(this, "Bienvenido", QString("¡Bienvenido usuario '%1'!").arg(usuario.getNombreUsuario()));
-        this->hide();
-        Home*h=new Home(this);  //
-        h->exec();
+        Home*h=new Home(usuario,nullptr);
+        h->show();
         this->close();
         return;
+
     }
 
     QMessageBox::critical(this, "Error", "Credenciales incorrectas o usuario inactivo.");
+
+}
+
+void LogIn::volverr()
+{
+
+    MenuInicio*m=new MenuInicio(nullptr);
+    m->show();
+    this->close();
 
 }

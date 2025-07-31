@@ -2,6 +2,7 @@
 #include<QFile>
 #include<QDataStream>
 #include<QDebug>
+#include<QMessageBox>
 
 GestorArtistas::GestorArtistas() {}
 
@@ -30,21 +31,33 @@ bool GestorArtistas::registrarArtista(int idUsuario, const QString &nombreArtist
 {
 
     QVector<Artista>artistas=leerArtista();
+    QString artisticoLimpio=nombreArtistico.trimmed().toLower();
+    QString realLimpio=nombreReal.trimmed().toLower();
+
+    //LEA A TODOS LOS ARTISTAS DEL ARCHIVO BINARIOSZZZ
     for(const Artista &a:artistas)
     {
 
         if(a.getId()==idUsuario)
         {
 
-            qWarning()<<"El usuario ya esta registrado como artista.";
+            QMessageBox::warning(nullptr,"Registro fallido","ID igual.");
             return false;
 
         }
 
-        if(a.getNombreArtistico().toLower()==nombreArtistico.toLower())
+        if(a.getNombreArtistico().trimmed().toLower()==artisticoLimpio)
         {
 
-            qWarning()<<"Ya existe un artista con ese nombre artistico.";
+            QMessageBox::warning(nullptr,"Registro fallido","Este usuario ya esta registrado con ese nombre artistico.");
+            return false;
+
+        }
+
+        if(a.getNombreReal().trimmed().toLower()==realLimpio)
+        {
+
+            QMessageBox::warning(nullptr,"Registro fallido","Este usuario ya esta registrado con ese nombre.");
             return false;
 
         }
@@ -65,7 +78,7 @@ QVector<Artista> GestorArtistas::leerArtista()
     if(!file.open(QIODevice::ReadOnly)) return artistas;
 
     QDataStream in(&file);
-    while(!in.atEnd())
+    while(!in.atEnd())//HASTA LLEGAR AL FINAL DEL ARCHIVO
     {
         int id;
         QString artistico, real, pais, genero, bio, contra, ruta;
@@ -89,7 +102,7 @@ bool GestorArtistas::validarLogIn(const QString &nombreReal, const QString &cont
     for(const Artista&a:artista)
     {
 
-        if(a.getNombreReal()==nombreReal&&a.getContrasena()==contrasena&&a.estaActivo())
+        if(a.getNombreReal().trimmed().toLower()==nombreReal.trimmed().toLower()&&a.getContrasena()==contrasena&&a.estaActivo())
         {
 
             usuarioEncontrado=a;

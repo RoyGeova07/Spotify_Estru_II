@@ -1,14 +1,8 @@
 #include "usuario.h"
 
-Usuario::Usuario()
-    : id(0), fechaRegistro(QDate::currentDate()), esAdmin(false), activo(true) {}
+Usuario::Usuario(): id(0), fechaRegistro(QDate::currentDate()), esAdmin(false), activo(true) {}
 
-Usuario::Usuario(int id, const QString &nombreUsuario, const QString &contrasena, const QDate &fecha,
-                 const QString &generoFavorito, const QString &rutaFoto,
-                 bool esAdmin, bool activo)
-    : id(id), nombreUsuario(nombreUsuario), contrasena(contrasena),
-    fechaRegistro(fecha), generoFavorito(generoFavorito),
-    rutaFoto(rutaFoto), esAdmin(esAdmin), activo(activo) {}
+Usuario::Usuario(int id, const QString &nombreUsuario, const QString &contrasena,const QDate &fechaNacimiento,const QDate &fecha,const QString &generoFavorito, const QString &rutaFoto,bool esAdmin, bool activo): id(id), nombreUsuario(nombreUsuario), contrasena(contrasena),fechaRegistro(fecha), fechaNacimiento(fechaNacimiento),generoFavorito(generoFavorito), rutaFoto(rutaFoto),esAdmin(esAdmin), activo(activo) {}
 
 int Usuario::getId() const { return id; }
 QString Usuario::getNombreUsuario() const { return nombreUsuario; }
@@ -24,4 +18,11 @@ void Usuario::setContrasena(const QString &nueva) {
 }
 void Usuario::desactivar() {
     activo = false;
+}
+
+QDate Usuario::getFechaNacimiento()const
+{
+
+    return fechaNacimiento;
+
 }

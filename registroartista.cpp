@@ -8,8 +8,13 @@
 #include <QFileDialog>
 #include <QDir>
 #include"home.h"
+#include"PantallaAdmin.h"
+#include"menuadmin.h"
+#include"menuinicio.h"
 
-RegistroArtista::RegistroArtista(QWidget *parent) : QDialog(parent) {
+RegistroArtista::RegistroArtista(QWidget *parent) : QDialog(parent)
+{
+
     setWindowTitle("Registro de Artista");
     setFixedSize(700, 740);
 
@@ -43,6 +48,7 @@ RegistroArtista::RegistroArtista(QWidget *parent) : QDialog(parent) {
         "Tanzania", "Tayikistán", "Timor Oriental", "Togo", "Tonga", "Trinidad y Tobago", "Túnez", "Turkmenistán", "Turquía",
         "Tuvalu", "Ucrania", "Uganda", "Uruguay", "Uzbekistán", "Vanuatu", "Venezuela", "Vietnam", "Yemen", "Yibuti",
         "Zambia", "Zimbabue"
+
     });
     txtBiografia = new QTextEdit;
     txtBiografia->setFixedHeight(80);
@@ -83,7 +89,7 @@ RegistroArtista::RegistroArtista(QWidget *parent) : QDialog(parent) {
     comboGeneroMusical->setStyleSheet(estiloInput);
     txtBiografia->setStyleSheet(estiloInput);
 
-    // Botón imagen
+    // Botón imagen :)
     btnSeleccionarImagen = new QPushButton("Seleccionar Imagen...");
     btnSeleccionarImagen->setStyleSheet(R"(
         QPushButton {
@@ -103,7 +109,7 @@ RegistroArtista::RegistroArtista(QWidget *parent) : QDialog(parent) {
     vistaPreviaImagen->setStyleSheet("border: 2px solid white; background-color: black; color: white;");
     vistaPreviaImagen->setAlignment(Qt::AlignCenter);
 
-    // Botón registrar
+    // Botón registrar >:)
     btnRegistrar = new QPushButton("Registrar Artista");
     btnRegistrar->setFixedWidth(220);
     btnRegistrar->setStyleSheet(R"(
@@ -120,7 +126,7 @@ RegistroArtista::RegistroArtista(QWidget *parent) : QDialog(parent) {
         }
     )");
 
-    // Botón volver
+    // Botón volver >:(
     btnVolver = new QPushButton("← Volver al Menú");
     btnVolver->setStyleSheet(R"(
         QPushButton {
@@ -184,14 +190,18 @@ RegistroArtista::RegistroArtista(QWidget *parent) : QDialog(parent) {
     connect(btnRegistrar, &QPushButton::clicked, this, &RegistroArtista::RegistrarArtista);
     connect(btnSeleccionarImagen, &QPushButton::clicked, this, [=]() {
         QString ruta = QFileDialog::getOpenFileName(this, "Seleccionar Imagen", QDir::homePath(), "Imágenes (*.png *.jpg *.jpeg)");
-        if (!ruta.isEmpty()) {
+        if(!ruta.isEmpty())
+        {
+
             txtRutaImagen->setText(ruta);
             QPixmap imagen(ruta);
             vistaPreviaImagen->setText("");
             vistaPreviaImagen->setPixmap(imagen.scaled(vistaPreviaImagen->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
+
         }
     });
-    connect(btnVolver, &QPushButton::clicked, this, &RegistroArtista::RegresarAlMenu);
+
+    connect(btnVolver,&QPushButton::clicked,this,&RegistroArtista::RegresarAlMenu);
 
 }
 
@@ -214,9 +224,9 @@ void RegistroArtista::RegistrarArtista()
     }
 
     QDate hoy=QDate::currentDate();
+    QVector<Artista> artistas=gestorArtistas.leerArtista();
 
     int idGenerado=1;
-    QVector<Artista> artistas=gestorArtistas.leerArtista();
     for(const Artista &a:artistas)
     {
 
@@ -225,11 +235,10 @@ void RegistroArtista::RegistrarArtista()
 
     }
 
-    Artista artista(idGenerado, nombreArtistico, nombreReal, pais, genero, biografia, contrasena, rutaImagen);
-    if(!gestorArtistas.GuardarArtista(artista))
+    Artista artista(idGenerado, nombreArtistico, nombreReal, pais, genero, biografia, contrasena, rutaImagen,true);
+    if(!gestorArtistas.registrarArtista(idGenerado, nombreArtistico, nombreReal, pais, genero, biografia, contrasena, rutaImagen))
     {
 
-        QMessageBox::warning(this,"Registro fallido","El nombre artístico ya esta en uso.");
         return;
 
     }
@@ -239,14 +248,30 @@ void RegistroArtista::RegistrarArtista()
     lblResultado->setStyleSheet("color: green;");
     lblResultado->setText("Artista registrado correctamente.");
 
-    Home* home=new Home(this);
-    this->hide();
-    home->exec();
-    this->close();
+    // Releer el artista desde archivo para asegurar que la imagen esta correcta
+    QVector<Artista> artistasActualizados = gestorArtistas.leerArtista();
+    for (const Artista& a : artistasActualizados)
+    {
+
+        if (a.getId() == idGenerado)
+        {
+
+            MenuAdmin* home = new MenuAdmin(a, nullptr);
+            home->show();
+            this->hide();
+            return;
+
+        }
+    }
 
 }
 
-void RegistroArtista::RegresarAlMenu() {
+void RegistroArtista::RegresarAlMenu()
+{
+
+    MenuInicio*m=new MenuInicio(nullptr);
+    m->show();
     this->close();
+
 }
 

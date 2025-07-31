@@ -7,6 +7,7 @@
 #include <QPushButton>
 #include <QLabel>
 #include <QTextEdit>
+#include<QDateEdit>
 #include "gestorUsuarios.h"
 
 class RegistroUsuario : public QDialog {
@@ -33,6 +34,7 @@ private:
     QPushButton*btnRegistrar;
     QPushButton*btnVolver;
     QLabel*lblResultado;
+    QDateEdit*dateNacimiento;
 
     GestorUsuarios gestorUsuarios;
 };
