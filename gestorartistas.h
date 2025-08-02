@@ -3,6 +3,7 @@
 
 #include"artista.h"
 #include<QVector>
+#include<QDate>
 
 
 class GestorArtistas
@@ -15,7 +16,7 @@ private:
 public:
     GestorArtistas();
 
-    bool registrarArtista(int idUsuario, const QString &nombreArtistico,const QString &nombreReal, const QString &pais,const QString &generoMusical, const QString &biografia,const QString &contrasena, const QString &rutaImagen);
+    bool registrarArtista(int idUsuario, const QString &nombreArtistico,const QString &nombreReal, const QString &pais,const QString &generoMusical, const QString &biografia,const QString &contrasena, const QString &rutaImagen,const QDate &fechaNacimiento);
     bool validarLogIn(const QString &nombreReal, const QString &contrasena, Artista &usuarioEncontrado);
 
     bool GuardarArtista(const Artista &a);

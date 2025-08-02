@@ -20,10 +20,11 @@ private:
     QDate fechaRegistro;
     QString rutaImagen;
     bool activo;
+    QDate fechaNacimiento;
 
 public:
     Artista();
-    Artista(int idArtista, const QString &nombreArtistico, const QString &nombreReal,const QString &pais, const QString &generoMusical, const QString &biografia,const QString &contrasena, const QString &rutaImagen, bool activo = true);
+    Artista(int idArtista, const QString &nombreArtistico, const QString &nombreReal,const QString &pais, const QString &generoMusical, const QString &biografia,const QString &contrasena, const QString &rutaImagen, bool activo = true,const QDate &fechaNacimiento=QDate());
 
     int getId() const;
     QString getNombreArtistico() const;
@@ -35,6 +36,7 @@ public:
     QDate getFechaRegistro() const;
     QString getRutaImagen() const;
     bool estaActivo() const;
+    QDate getFechaNacimiento()const;
 
     void desactivar();
 

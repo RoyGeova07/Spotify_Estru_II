@@ -170,9 +170,101 @@ Home::Home(const Usuario& usuarioActivo, QWidget *parent): QWidget(parent), usua
     lblCreadoPara->setStyleSheet("font-size: 22px; font-weight: bold;");
     layoutScroll->addWidget(lblCreadoPara);
 
-    QWidget *espaciadorFijo=new QWidget();
-    espaciadorFijo->setFixedHeight(300);
-    layoutScroll->addWidget(espaciadorFijo);
+    // ==================== SECCION: Canciones ====================
+    QLabel* lblCanciones=new QLabel("Canciones");
+    lblCanciones->setStyleSheet("font-size: 20px; font-weight: bold;");
+    layoutScroll->addWidget(lblCanciones);
+
+    //Scroll horizontal
+    QScrollArea* scrollCanciones=new QScrollArea();
+    scrollCanciones->setWidgetResizable(true);
+    scrollCanciones->setFixedHeight(180);
+    scrollCanciones->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+    scrollCanciones->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    scrollCanciones->setStyleSheet("border: none;");
+
+    //Contenedor horizontal
+    QWidget* contenedorCanciones=new QWidget();
+    QHBoxLayout* layoutCanciones=new QHBoxLayout(contenedorCanciones);
+    layoutCanciones->setSpacing(20);
+    layoutCanciones->setContentsMargins(10,10,10,10);
+
+    // Canciones (widgets en fila)
+    for(int i=0;i<1;++i)
+    {
+
+        QLabel*cancion=new QLabel("🎵 Canción "+QString::number(i+1));
+        cancion->setFixedSize(120, 120);
+        cancion->setAlignment(Qt::AlignCenter);
+        cancion->setStyleSheet("background-color: #222; border-radius: 10px; color: white;");
+        layoutCanciones->addWidget(cancion);
+
+    }
+
+    scrollCanciones->setWidget(contenedorCanciones);
+    layoutScroll->addWidget(scrollCanciones);
+
+    // ==================== SECCION: EP ====================
+    QLabel* lblEp =new QLabel("EP");
+    lblEp->setStyleSheet("font-size: 20px; font-weight: bold;");
+    layoutScroll->addWidget(lblEp);
+
+    QScrollArea*scrollEp= new QScrollArea();
+    scrollEp->setWidgetResizable(true);
+    scrollEp->setFixedHeight(160);
+    scrollEp->setStyleSheet("border: none;");
+    scrollEp->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+    scrollEp->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+
+    QWidget*contenedorEp=new QWidget();
+    QHBoxLayout*layoutEp=new QHBoxLayout(contenedorEp);
+    layoutEp->setSpacing(20);
+    layoutEp->setContentsMargins(10,10,10,10);
+
+    // EPs
+    for(int i=0;i<4;++i)
+    {
+
+        QLabel*ep=new QLabel("💿 EP " + QString::number(i+1));
+        ep->setFixedSize(120, 120);
+        ep->setAlignment(Qt::AlignCenter);
+        ep->setStyleSheet("background-color: #222; border-radius: 10px; color: white;");
+        layoutEp->addWidget(ep);
+
+    }
+
+    scrollEp->setWidget(contenedorEp);
+    layoutScroll->addWidget(scrollEp);
+
+    // ==================== SECCION: Albumes ====================
+    QLabel*lblAlbums=new QLabel("Albums");
+    lblAlbums->setStyleSheet("font-size: 20px; font-weight: bold;");
+    layoutScroll->addWidget(lblAlbums);
+
+    QScrollArea*scrollAlbums= new QScrollArea();
+    scrollAlbums->setWidgetResizable(true);
+    scrollAlbums->setFixedHeight(160);
+    scrollAlbums->setStyleSheet("border: none;");
+    scrollAlbums->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+    scrollAlbums->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+
+    QWidget* contenedorAlbums=new QWidget();
+    QHBoxLayout* layoutAlbums=new QHBoxLayout(contenedorAlbums);
+    layoutAlbums->setSpacing(20);
+    layoutAlbums->setContentsMargins(10,10,10,10);
+
+    // Álbumes
+    for (int i = 0; i < 10; ++i)
+    {
+        QLabel* album = new QLabel("📀 Álbum " + QString::number(i+1));
+        album->setFixedSize(120, 120);
+        album->setAlignment(Qt::AlignCenter);
+        album->setStyleSheet("background-color: #222; border-radius: 10px; color: white;");
+        layoutAlbums->addWidget(album);
+    }
+
+    scrollAlbums->setWidget(contenedorAlbums);
+    layoutScroll->addWidget(scrollAlbums);
 
     QLabel *lblArtistas =new QLabel("Artistas populares");
     lblArtistas->setStyleSheet("font-size: 20px; font-weight: bold;");

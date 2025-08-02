@@ -39,7 +39,6 @@ void Subir_Cancion::configurarUI()
 
     layoutPrincipal->addLayout(layoutSuperior);
 
-
     lblNombreArtista=new QLabel("Artista: "+artista.getNombreArtistico());
     lblNombreArtista->setStyleSheet("font-weight: bold; font-size: 20px; color: #4CAF50;");
     lblNombreArtista->setAlignment(Qt::AlignCenter);
@@ -111,22 +110,22 @@ void Subir_Cancion::configurarUI()
         background: #4CAF50;
     }
 
-    // QScrollBar:vertical {
-    //     background: #2c2c2c;
-    //     width: 10px;
-    //     margin: 0px;
-    // }
+    QScrollBar:vertical {
+        background: #2c2c2c;
+        width: 10px;
+        margin: 0px;
+    }
 
-    // QScrollBar::handle:vertical {
-    //     background: #4CAF50;
-    //     border-radius: 4px;
-    // }
+    QScrollBar::handle:vertical {
+        background: #4CAF50;
+        border-radius: 4px;
+    }
 
-    // QScrollBar::add-line:vertical,
-    // QScrollBar::sub-line:vertical {
-    //     background: none;
-    //     height: 0px;
-    // }
+    QScrollBar::add-line:vertical,
+    QScrollBar::sub-line:vertical {
+        background: none;
+        height: 0px;
+    }
 
     )");
 
@@ -160,7 +159,7 @@ void Subir_Cancion::tipoSeleccionado(const QString &tipo)
 
 }
 
-QWidget*Subir_Cancion::crearFormularioCancion(int index)
+QWidget*Subir_Cancion::crearFormularioCancion(int /*index*/)
 {
 
     QWidget*contenido=new QWidget;

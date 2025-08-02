@@ -9,10 +9,9 @@
 #include<QVBoxLayout>
 #include<QHBoxLayout>
 #include <QComboBox>
-
-
 #include "gestorUsuarios.h"
 #include "gestorArtistas.h"
+#include<QDateEdit>
 
 class RegistroArtista:public QDialog{
 
@@ -40,6 +39,8 @@ private:
     QPushButton*btnSeleccionarImagen;
     QLabel*vistaPreviaImagen;
     QPushButton* btnVolver;
+    QDateEdit*dateNacimiento;
+    QLabel*lblIdArtista;
 
     GestorUsuarios gestorUsuarios;
     GestorArtistas gestorArtistas;

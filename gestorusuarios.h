@@ -12,14 +12,12 @@ private:
 
     QString ArchivoUsuarios="usuarios.dat";
 
-    int generarNuevoId(); //Busca el ultimo ID y genera el siguiente
-
-
 public:
     GestorUsuarios();
 
-    bool registrarUsuario(const QString &nombreUsuario, const QString &contrasena,const QDate &fechaNacimiento,const QString &generoFavorito,const QString &rutaFoto,const QDate& fecha ,bool esAdmin);
+    bool registrarUsuario(const QString &nombreReal,const QString &nombreUsuario, const QString &contrasena,const QDate &fechaNacimiento,const QString &generoFavorito,const QString &rutaFoto,const QDate& fecha ,const QString &correo,bool esAdmin);
     QVector<Usuario> leerUsuarios();
+    int generarNuevoId(); //Busca el ultimo ID y genera el siguiente
     bool validarLogin(const QString &nombreUsuario, const QString &contrasena, Usuario &usuarioEncontrado);
 
 };

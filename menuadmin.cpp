@@ -16,110 +16,125 @@ MenuAdmin::MenuAdmin(const Artista& artistaActivo, QWidget *parent):QWidget(pare
 
 void MenuAdmin::configurarUI()
 {
+    setStyleSheet("background-color: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #191414, stop:1 #121212); font-family: 'Segoe UI';");
 
-    //ESTILO SPOTIFYYYYY
-    setStyleSheet("background-color: #121212; font-family: 'Segoe UI';");
+    setFixedSize(1000, 700);
 
-    QVBoxLayout* layoutPrincipal = new QVBoxLayout(this);
-    layoutPrincipal->setAlignment(Qt::AlignTop);
+    QHBoxLayout *layoutGeneral = new QHBoxLayout(this);
 
-    // Datos del artista
-    lblNombre =new QLabel("Bienvenido, " + artista.getNombreArtistico());
-    lblNombre->setStyleSheet("font-size: 24px; font-weight: bold; color: white;");
-    lblNombre->setAlignment(Qt::AlignCenter);
+    // ======================== COLUMNA IZQUIERDA =========================
+    QWidget *panelLateral = new QWidget;
+    panelLateral->setFixedWidth(280);
+    panelLateral->setStyleSheet("background-color: #000000; border-top-right-radius: 30px; border-bottom-right-radius: 30px;");
 
-    //estilo imagen circular
-    lblFoto=new QLabel();
-    lblFoto->setFixedSize(130, 130);
-    lblFoto->setStyleSheet(
-        "border-radius: 65px;"
-        "border: 3px solid #1DB954;"
-        "background-color: #222;"
-        );
+    QVBoxLayout *layoutLateral=new QVBoxLayout(panelLateral);
+    layoutLateral->setAlignment(Qt::AlignTop|Qt::AlignHCenter);
+    layoutLateral->setSpacing(25);
 
-    //AQUI SE APLICA UNA SOMBRA REAL CON QGraphicsDropShadowEffect
-    QGraphicsDropShadowEffect*sombra=new QGraphicsDropShadowEffect(this);
-    sombra->setBlurRadius(15);
+    //Imagen circular
+    lblFoto=new QLabel;
+    lblFoto->setFixedSize(120, 120);
+    lblFoto->setStyleSheet("border-radius: 60px; border: 3px solid #1DB954; background-color: #222;");
+
+    QGraphicsDropShadowEffect *sombra=new QGraphicsDropShadowEffect(this);
+    sombra->setBlurRadius(20);
     sombra->setOffset(0,0);
     sombra->setColor(QColor("#1DB954"));
     lblFoto->setGraphicsEffect(sombra);
 
-    //========CODIGO NUEVOOOOO===========================                                                  |
-
-    //SE CARGA LA IMAGEN CIRCULAR
     QPixmap pix(artista.getRutaImagen());
-    if(!pix.isNull())//VERIFICA SI LA IMAGEN SE CARGO BIEN, SI NO EXISTE PIX NULL DEVULVE TRUE
+    if(!pix.isNull())
     {
 
-        //AQUI RECORTO EL CENTRO CUADRADO DE LA IMAGEN ORIGINAL
-        int lado=qMin(pix.width(),pix.height());
-        QRect centro((pix.width()-lado)/2,(pix.height()-lado)/2,lado,lado);//RECORTO
-        QPixmap cuadrado=pix.copy(centro);//ME AYUDA A RECORTAR EL AREA DEFINIDA POR 'CENTRO' DE LA IMAGEN ORIGINAL
-        //COPY DEVUELVE UN NUEVO QPIXMAP QUE CONTIENE SOLO LA PARTE DEL RECTANGULO INDICADO.
+        int lado=qMin(pix.width(), pix.height());
+        QRect centro((pix.width() -lado)/2,(pix.height()-lado)/2,lado,lado);
+        QPixmap cuadrado= pix.copy(centro);
+        QPixmap escalado= cuadrado.scaled(lblFoto->size(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
 
-        //AQUI ESCALO EL TAMANIO DEL LABEL, EJEM 130X130
-        //CON SCALED CAMBIO EL TAMANIO DEL QPIXMAP
-        //CON Qt::IgnoreAspectRatio: ignora la proporciOn original (porque ya es cuadrado).
-        //Qt::SmoothTransformation: usa interpolaciOn bilineal para suavizar bordes y que no se vea pixelado o feo.
-        QPixmap escalado=cuadrado.scaled(lblFoto->size(),Qt::IgnoreAspectRatio,Qt::SmoothTransformation);
-
-        // Creamos pixmap transparente para recortar el circulo
-        //Este sera el lienzo donde dibujaremos la versiOn circular.
-        QPixmap CircularPixmap(lblFoto->size());//Crea un nuevo QPixmap vacIo con el mismo tamaño que el lblFoto
-        CircularPixmap.fill(Qt::transparent);//Rellena el pixmap con fondo transparente.
-
-
-        QPainter painter(&CircularPixmap);//Crea un "pincel" (QPainter) para dibujar dentro del CircularPixmap.
-        painter.setRenderHint(QPainter::Antialiasing);//Activa el antialiasing, que suaviza los bordes curvos (como los circulos) y evita que se vean pixelados.
-        QPainterPath path;//Crea una ruta (forma) que podemos usar para limitar el area de dibujo.
+        QPixmap circular(lblFoto->size());
+        circular.fill(Qt::transparent);
+        QPainter painter(&circular);
+        painter.setRenderHint(QPainter::Antialiasing);
+        QPainterPath path;
         path.addEllipse(0,0,lblFoto->width(),lblFoto->height());
         painter.setClipPath(path);
         painter.drawPixmap(0,0,escalado);
         painter.end();
 
-        //Se asigna el pixmap recortado a circular
-        lblFoto->setPixmap(CircularPixmap);
+        lblFoto->setPixmap(circular);
 
     }
-    //========CODIGO NUEVOOOOO===========================                                                   |
 
-    QHBoxLayout*layoutFoto=new QHBoxLayout();
-    layoutFoto->addStretch();
-    layoutFoto->addWidget(lblFoto);
-    layoutFoto->addStretch();
+    lblNombre=new QLabel(artista.getNombreArtistico());
+    lblNombre->setStyleSheet("font-size: 20px; font-weight: bold; color: #1DB954;");
+    lblNombre->setAlignment(Qt::AlignCenter);
 
-    // Botones
-    btnSubirCancion= new QPushButton("🎵 Subir Cancion");
-    btnEditarCancion=new QPushButton("✏ Editar Cancion");
-    btnEliminarCancion=new QPushButton("🗑 Eliminar Cancion");
-    btnMiMusica=new QPushButton("🎧 Mi Musica");
-    btnVerEstadisticas=new QPushButton("📊 Ver Estadisticas");
-    btnSalir =new QPushButton("🔙 Cerrar Sesion");
+    // ================== BOTONES ESTILO MENU ==================
 
-    estiloBoton(btnSubirCancion, "#1DB954");//VERDE
-    estiloBoton(btnEditarCancion, "#3E8EED");//AZUL
-    estiloBoton(btnEliminarCancion, "#E53935");//ROJO
-    estiloBoton(btnMiMusica,"#FFC107");//AMARILLO
-    estiloBoton(btnVerEstadisticas, "#9C27B0");//PURPURA
-    estiloBoton(btnSalir, "#424242");//GRIS OSCURO
+    btnSubirCancion=new QPushButton("➕  Subir Canción");
+    btnEditarCancion=new QPushButton("✏️  Editar Canción");
+    btnEliminarCancion=new QPushButton("🗑️  Eliminar Canción");
+    btnMiMusica=new QPushButton("🎧  Mi Música");
+    btnVerEstadisticas=new QPushButton("📊  Ver Estadísticas");
+    btnSalir=new QPushButton("🔙  Cerrar Sesión");
 
-    connect(btnSubirCancion,&QPushButton::clicked,this,&MenuAdmin::abrirVentanaSubirCancion);
-    // connect(btnMiMusica, &QPushButton::clicked, this, &MenuAdmin::abrirMiMusica);
-    connect(btnSalir,&QPushButton::clicked,this,&MenuAdmin::CerrarSesion);
+    QVector<QPushButton*>botones=
+    {
 
-    //ENSABLAMOS LOS LAYOUT
-    layoutPrincipal->addWidget(lblNombre);
-    layoutPrincipal->addLayout(layoutFoto);
-    layoutPrincipal->addSpacing(10);
-    layoutPrincipal->addWidget(btnSubirCancion);
-    layoutPrincipal->addWidget(btnEditarCancion);
-    layoutPrincipal->addWidget(btnEliminarCancion);
-    layoutPrincipal->addWidget(btnVerEstadisticas);
-    layoutPrincipal->addWidget(btnMiMusica);
-    layoutPrincipal->addSpacing(20);
-    layoutPrincipal->addWidget(btnSalir);
+        btnSubirCancion, btnEditarCancion, btnEliminarCancion,
+        btnMiMusica, btnVerEstadisticas, btnSalir
 
+    };
 
+    for(QPushButton*boton:botones)
+    {
+
+        boton->setFixedHeight(45);
+        boton->setCursor(Qt::PointingHandCursor);
+        boton->setStyleSheet(
+            "QPushButton {"
+            "background-color: transparent;"
+            "color: white;"
+            "text-align: left;"
+            "padding-left: 20px;"
+            "font-size: 16px;"
+            "border: none;"
+            "}"
+            "QPushButton:hover {"
+            "background-color: #1DB954;"
+            "color: black;"
+            "border-radius: 10px;"
+            "}"
+            );
+        layoutLateral->addWidget(boton);
+
+    }
+
+    layoutLateral->addStretch();
+    layoutLateral->insertWidget(0,lblFoto);
+    layoutLateral->insertWidget(1,lblNombre);
+
+    // ======================== PANEL DERECHO (estetico vacio por ahora) =========================
+    QWidget*panelDerecho=new QWidget;
+    panelDerecho->setStyleSheet("background-color: #181818; border-radius: 15px;");
+    panelDerecho->setMinimumWidth(680);
+
+    QLabel* lblMensaje=new QLabel("¡Bienvenido al panel de artista!\nSelecciona una opción a la izquierda.");
+    lblMensaje->setAlignment(Qt::AlignCenter);
+    lblMensaje->setStyleSheet("color: white; font-size: 22px; font-weight: bold;");
+
+    QVBoxLayout* layoutDerecho = new QVBoxLayout(panelDerecho);
+    layoutDerecho->addStretch();
+    layoutDerecho->addWidget(lblMensaje);
+    layoutDerecho->addStretch();
+
+    // Ensamble final
+    layoutGeneral->addWidget(panelLateral);
+    layoutGeneral->addWidget(panelDerecho);
+
+    // Conexiones
+    connect(btnSubirCancion, &QPushButton::clicked, this, &MenuAdmin::abrirVentanaSubirCancion);
+    connect(btnSalir, &QPushButton::clicked, this, &MenuAdmin::CerrarSesion);
 }
 
 void MenuAdmin::estiloBoton(QPushButton* boton, const QString& color)

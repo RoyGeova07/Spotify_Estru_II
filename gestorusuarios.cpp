@@ -31,13 +31,13 @@ QVector<Usuario> GestorUsuarios::leerUsuarios()
     while(!in.atEnd())
     {
         int id;
-        QString nombre, contra, genero, foto;
+        QString NombreReal,nombre, contra, genero, foto,correoElectronico;
         QDate fecha,fechaNacimiento;
         bool esAdmin, activo;
 
-        in >> id >> nombre >> contra >> fechaNacimiento>>fecha >> genero >> foto >> esAdmin >> activo;
+        in >> id >> NombreReal>>nombre >> contra >> fechaNacimiento>>fecha >> genero >> foto >> correoElectronico>>esAdmin >> activo;
 
-        Usuario u(id, nombre, contra, fechaNacimiento,fecha, genero, foto, esAdmin, activo);
+        Usuario u(id, NombreReal,nombre, contra, fechaNacimiento,fecha, genero, foto, correoElectronico,esAdmin, activo);
         usuarios.append(u);
     }
 
@@ -46,7 +46,7 @@ QVector<Usuario> GestorUsuarios::leerUsuarios()
 }
 
 
-bool GestorUsuarios::registrarUsuario(const QString &nombreUsuario, const QString &contrasena,const QDate &fechaNacimiento,const QString &generoFavorito, const QString &rutaFoto,const QDate &fecha, bool esAdmin)
+bool GestorUsuarios::registrarUsuario(const QString &NombreReal,const QString &nombreUsuario, const QString &contrasena,const QDate &fechaNacimiento,const QString &generoFavorito, const QString &rutaFoto,const QDate &fecha,const QString &CorreoElectronico, bool esAdmin)
 {
     QVector<Usuario>usuarios=leerUsuarios();
 
@@ -64,7 +64,22 @@ bool GestorUsuarios::registrarUsuario(const QString &nombreUsuario, const QStrin
 
         }
 
+        if(u.getNombreReal().trimmed().toLower()==NombreReal)
+        {
+
+            return false;
+
+        }
+
+        if(u.getCorreo().trimmed().toLower()==CorreoElectronico)
+        {
+
+            return false;
+
+        }
+
     }
+
 
     int NuevoID=generarNuevoId();
 
@@ -77,7 +92,7 @@ bool GestorUsuarios::registrarUsuario(const QString &nombreUsuario, const QStrin
         }
     }
 
-    Usuario nuevo(NuevoID, nombreUsuario, contrasena,fechaNacimiento,fecha, generoFavorito, rutaFoto, esAdmin, true);
+    Usuario nuevo(NuevoID,NombreReal ,nombreUsuario, contrasena,fechaNacimiento,fecha, generoFavorito, rutaFoto, CorreoElectronico,esAdmin, true);
 
     QFile archivo(ArchivoUsuarios);
     if(!archivo.open(QIODevice::Append))
@@ -89,7 +104,7 @@ bool GestorUsuarios::registrarUsuario(const QString &nombreUsuario, const QStrin
     }
 
     QDataStream out(&archivo);
-    out << nuevo.getId()<< nuevo.getNombreUsuario()<< nuevo.getContrasena()<< nuevo.getFechaNacimiento()<<nuevo.getFechaRegistro()<< nuevo.getGeneroFavorito()<< nuevo.getRutaFoto()<< nuevo.getEsAdmin()<< nuevo.estaActivo();
+    out << nuevo.getId()<<nuevo.getNombreReal() <<nuevo.getNombreUsuario()<< nuevo.getContrasena()<< nuevo.getFechaNacimiento()<<nuevo.getFechaRegistro()<< nuevo.getGeneroFavorito()<< nuevo.getRutaFoto()<< nuevo.getCorreo()<<nuevo.getEsAdmin()<<nuevo.estaActivo();
 
     archivo.close();
 

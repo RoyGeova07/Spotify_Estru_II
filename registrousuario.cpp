@@ -13,9 +13,11 @@ RegistroUsuario::RegistroUsuario(QWidget *parent) : QDialog(parent)
 {
 
     setWindowTitle("Registro de Usuario");
-    setFixedSize(520, 550);
+    setFixedSize(520, 720);
 
     txtNombreUsuario = new QLineEdit;
+    txtNombreReal=new QLineEdit;
+    txtCorreo=new QLineEdit;
     txtContrasena = new QLineEdit;
     txtContrasena->setEchoMode(QLineEdit::Password);
     txtRutaImagen = new QLineEdit;
@@ -24,6 +26,7 @@ RegistroUsuario::RegistroUsuario(QWidget *parent) : QDialog(parent)
     comboPais = new QComboBox;
     comboPais->addItems(
     {
+
         "Afganistán", "Albania", "Alemania", "Andorra", "Angola", "Antigua y Barbuda", "Arabia Saudita", "Argelia", "Argentina",
         "Armenia", "Australia", "Austria", "Azerbaiyán", "Bahamas", "Bangladés", "Baréin", "Barbados", "Bélgica",
         "Belice", "Benín", "Bielorrusia", "Birmania", "Bolivia", "Bosnia y Herzegovina", "Botsuana", "Brasil",
@@ -99,14 +102,21 @@ RegistroUsuario::RegistroUsuario(QWidget *parent) : QDialog(parent)
     lblResultado = new QLabel;
     lblResultado->setStyleSheet("color: red");
 
+    int ProximoId=gestorUsuarios.generarNuevoId();
+    lblIdUsuario=new QLabel(QString("ID asignado: %1").arg(ProximoId));
+    lblIdUsuario->setStyleSheet("color: gray; font-weight: bold;");
+    lblIdUsuario->setAlignment(Qt::AlignCenter);
+
     // Layout general
     QVBoxLayout *formLayout = new QVBoxLayout;
+    formLayout->addWidget(lblIdUsuario);
     formLayout->addWidget(new QLabel("Nombre de Usuario:")); formLayout->addWidget(txtNombreUsuario);
     formLayout->addWidget(new QLabel("Contraseña:")); formLayout->addWidget(txtContrasena);
+    formLayout->addWidget(new QLabel("Nombre Real:"));formLayout->addWidget(txtNombreReal);
+    formLayout->addWidget(new QLabel("Correo Electronico:"));formLayout->addWidget(txtCorreo);
     formLayout->addWidget(new QLabel("País de Origen:")); formLayout->addWidget(comboPais);
     formLayout->addWidget(new QLabel("Género Musical:")); formLayout->addWidget(comboGeneroMusical);
-    formLayout->addWidget(new QLabel("Fecha de Nacimiento:"));
-    formLayout->addWidget(dateNacimiento);
+    formLayout->addWidget(new QLabel("Fecha de Nacimiento:"));formLayout->addWidget(dateNacimiento);
 
     // Imagen
     formLayout->addSpacing(10);
@@ -153,13 +163,15 @@ void RegistroUsuario::RegistrarUsuario()
 {
 
     QString nombre=txtNombreUsuario->text();
+    QString nombreReal=txtNombreReal->text();
     QString contrasena=txtContrasena->text();
+    QString correo=txtCorreo->text();
     QString pais=comboPais->currentText();
     QString genero=comboGeneroMusical->currentText();
     QString rutaImagen= txtRutaImagen->text();
     QDate nacimiento=dateNacimiento->date();
 
-    if(nombre.isEmpty()||contrasena.isEmpty()||pais.isEmpty()||genero.isEmpty()||rutaImagen.isEmpty()||nacimiento.isNull())
+    if(nombre.isEmpty()||contrasena.isEmpty()||pais.isEmpty()||genero.isEmpty()||rutaImagen.isEmpty()||nacimiento.isNull()||nombreReal.isEmpty()||correo.isEmpty())
     {
 
         QMessageBox::warning(this, "Campos incompletos", "Por favor completa todos los campos obligatorios.");
@@ -167,8 +179,37 @@ void RegistroUsuario::RegistrarUsuario()
 
     }
 
+    if(!correo.contains("@gmail")||!correo.contains(".com"))
+    {
+
+        QMessageBox::warning(this, "Correo invalido", "El correo debe contener '@gmail' y terminar con '.com' (por ejemplo: usuario@gmail.com).");
+        return;
+
+    }
+
+
     QDate hoy=QDate::currentDate();
     QVector<Usuario> usuarios=gestorUsuarios.leerUsuarios();
+
+    for(const Usuario &u : usuarios)
+    {
+
+        if(u.getCorreo().toLower()==correo)
+        {
+
+            QMessageBox::warning(this, "Correo ya registrado", "El correo electrónico ya esta en uso.");
+            return;
+
+        }
+        if(u.getNombreReal().toLower()==nombreReal.toLower())
+        {
+
+            QMessageBox::warning(this, "Nombre real repetido", "Ya existe un usuario con ese nombre real.");
+            return;
+
+        }
+
+    }
 
     int idGenerado=1;
     for(const Usuario &a:usuarios)
@@ -179,12 +220,12 @@ void RegistroUsuario::RegistrarUsuario()
 
     }
 
-    Usuario usuario(idGenerado,nombre,contrasena,nacimiento,hoy,genero,rutaImagen,false,true);
+    Usuario usuario(idGenerado,nombreReal,nombre,contrasena,nacimiento,hoy,genero,rutaImagen,correo,false,true);
 
-    if(!gestorUsuarios.registrarUsuario(nombre, contrasena, nacimiento,genero, rutaImagen, hoy, false))
+    if(!gestorUsuarios.registrarUsuario(nombreReal,nombre, contrasena, nacimiento,genero, rutaImagen,hoy,correo,false))
     {
 
-        QMessageBox::warning(this, "Registro fallido", "El nombre de usuario ya está en uso.");
+        QMessageBox::warning(this, "Registro fallido", "El nombre de usuario ya esta en uso.");
         return;
 
     }

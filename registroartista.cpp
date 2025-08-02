@@ -16,9 +16,22 @@ RegistroArtista::RegistroArtista(QWidget *parent) : QDialog(parent)
 {
 
     setWindowTitle("Registro de Artista");
-    setFixedSize(700, 740);
+    setFixedSize(700, 750);
+
+    int ProximoId=1;
+    QVector<Artista> artistas = gestorArtistas.leerArtista();
+    for(const Artista& a:artistas)
+    {
+
+        if(a.getId()>=ProximoId)
+            ProximoId=a.getId()+1;
+
+    }
 
     // Campos
+    lblIdArtista=new QLabel(QString("ID asignado: %1").arg(ProximoId));
+    lblIdArtista->setStyleSheet("color: #ccc; font-weight: bold;");
+    lblIdArtista->setAlignment(Qt::AlignCenter);
     txtContrasena = new QLineEdit;
     txtContrasena->setEchoMode(QLineEdit::Password);
     txtNombreArtistico = new QLineEdit;
@@ -51,12 +64,18 @@ RegistroArtista::RegistroArtista(QWidget *parent) : QDialog(parent)
 
     });
     txtBiografia = new QTextEdit;
-    txtBiografia->setFixedHeight(80);
+    txtBiografia->setFixedHeight(45);
     txtRutaImagen = new QLineEdit;
     txtRutaImagen->setVisible(false);
 
     comboGeneroMusical = new QComboBox;
     comboGeneroMusical->addItems({"Pop", "Corridos", "Cristianos", "Electrónica", "Reguetón", "Rock", "Clásicas"});
+
+    dateNacimiento=new QDateEdit;
+    dateNacimiento->setCalendarPopup(true);
+    dateNacimiento->setDisplayFormat("dd/MM/yyyy");
+    dateNacimiento->setMaximumDate(QDate::currentDate().addYears(-10));//solo mayores de 10 añitos
+    dateNacimiento->setMinimumDate(QDate::currentDate().addYears(-100));//un rango sensato
 
     QString estiloInput = R"(
     QLineEdit, QComboBox {
@@ -147,11 +166,13 @@ RegistroArtista::RegistroArtista(QWidget *parent) : QDialog(parent)
 
     // Layout formulario principal
     QVBoxLayout *formLayout = new QVBoxLayout;
+    formLayout->addWidget(lblIdArtista);
     formLayout->addWidget(new QLabel("Nombre Artístico:")); formLayout->addWidget(txtNombreArtistico);
     formLayout->addWidget(new QLabel("Nombre Real:")); formLayout->addWidget(txtNombreReal);
     formLayout->addWidget(new QLabel("Contraseña:")); formLayout->addWidget(txtContrasena);
     formLayout->addWidget(new QLabel("País:"));formLayout->addWidget(comboPais);
     formLayout->addWidget(new QLabel("Género Musical:")); formLayout->addWidget(comboGeneroMusical);
+    formLayout->addWidget(new QLabel("Fecha de Nacimiento"));formLayout->addWidget(dateNacimiento);
     formLayout->addWidget(new QLabel("Biografía:")); formLayout->addWidget(txtBiografia);
 
     // Etiqueta bien presentada
@@ -164,9 +185,8 @@ RegistroArtista::RegistroArtista(QWidget *parent) : QDialog(parent)
     QVBoxLayout *imagenLayout = new QVBoxLayout;
     imagenLayout->setAlignment(Qt::AlignHCenter);
     imagenLayout->addWidget(vistaPreviaImagen);
-    imagenLayout->addSpacing(1);
+    imagenLayout->addSpacing(20);
     imagenLayout->addWidget(btnSeleccionarImagen);
-    imagenLayout->addSpacing(1);
     formLayout->addLayout(imagenLayout);
 
     // Resultado centrado
@@ -214,8 +234,9 @@ void RegistroArtista::RegistrarArtista()
     QString genero= comboGeneroMusical->currentText();
     QString biografia= txtBiografia->toPlainText();
     QString rutaImagen= txtRutaImagen->text();
+    QDate nacimiento=dateNacimiento->date();
 
-    if(contrasena.isEmpty()||nombreArtistico.isEmpty()||nombreReal.isEmpty()||pais.isEmpty()||genero.isEmpty()||biografia.isEmpty()||rutaImagen.isEmpty())
+    if(contrasena.isEmpty()||nombreArtistico.isEmpty()||nombreReal.isEmpty()||pais.isEmpty()||genero.isEmpty()||biografia.isEmpty()||rutaImagen.isEmpty()||nacimiento.isNull())
     {
 
         QMessageBox::warning(this,"Campos incompletos","Por favor completa todos los campos obligatorios.");
@@ -235,8 +256,8 @@ void RegistroArtista::RegistrarArtista()
 
     }
 
-    Artista artista(idGenerado, nombreArtistico, nombreReal, pais, genero, biografia, contrasena, rutaImagen,true);
-    if(!gestorArtistas.registrarArtista(idGenerado, nombreArtistico, nombreReal, pais, genero, biografia, contrasena, rutaImagen))
+    Artista artista(idGenerado, nombreArtistico, nombreReal, pais, genero, biografia, contrasena, rutaImagen,true,nacimiento);
+    if(!gestorArtistas.registrarArtista(idGenerado, nombreArtistico, nombreReal, pais, genero, biografia, contrasena, rutaImagen,nacimiento))
     {
 
         return;

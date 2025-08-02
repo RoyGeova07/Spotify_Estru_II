@@ -10,6 +10,11 @@ MenuInicio::MenuInicio(QWidget *parent)
     setWindowTitle("Spotify");
     setFixedSize(600, 450);
 
+    QPalette paleta;
+    paleta.setBrush(QPalette::Window, QBrush(QPixmap(":/imagenes/fondo.jpg").scaled(size(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation)));
+    setAutoFillBackground(true);
+    setPalette(paleta);
+
     // Título
     lblTitulo =new QLabel("Spotify", this);
     lblTitulo->setAlignment(Qt::AlignCenter);

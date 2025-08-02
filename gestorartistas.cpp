@@ -20,14 +20,14 @@ bool GestorArtistas::GuardarArtista(const Artista &a)
     }
 
     QDataStream out(&file);
-    out << a.getId()<< a.getNombreArtistico()<< a.getNombreReal()<< a.getPais()<< a.getGenero()<< a.getBiografia()<< a.getContrasena()<< a.getFechaRegistro()<< a.getRutaImagen()<< a.estaActivo();
+    out << a.getId()<< a.getNombreArtistico()<< a.getNombreReal()<< a.getPais()<< a.getGenero()<< a.getBiografia()<< a.getContrasena()<< a.getFechaRegistro()<< a.getRutaImagen()<< a.estaActivo()<<a.getFechaNacimiento();
 
     file.close();
     return true;
 
 }
 
-bool GestorArtistas::registrarArtista(int idUsuario, const QString &nombreArtistico, const QString &nombreReal, const QString &pais, const QString &generoMusical, const QString &biografia, const QString &contrasena, const QString &rutaImagen)
+bool GestorArtistas::registrarArtista(int idUsuario, const QString &nombreArtistico, const QString &nombreReal, const QString &pais, const QString &generoMusical, const QString &biografia, const QString &contrasena, const QString &rutaImagen,const QDate &fechaNacimiento)
 {
 
     QVector<Artista>artistas=leerArtista();
@@ -64,7 +64,7 @@ bool GestorArtistas::registrarArtista(int idUsuario, const QString &nombreArtist
 
     }
 
-    Artista artista(idUsuario, nombreArtistico, nombreReal, pais, generoMusical,biografia, contrasena, rutaImagen, true);
+    Artista artista(idUsuario, nombreArtistico, nombreReal, pais, generoMusical,biografia, contrasena, rutaImagen, true,fechaNacimiento);
 
     return GuardarArtista(artista);
 
@@ -82,11 +82,11 @@ QVector<Artista> GestorArtistas::leerArtista()
     {
         int id;
         QString artistico, real, pais, genero, bio, contra, ruta;
-        QDate fecha;
+        QDate fecha,fechaNacimiento;
         bool activo;
 
-        in >> id >> artistico >> real >> pais >> genero >> bio >> contra >> fecha >> ruta >> activo;
-        Artista a(id, artistico, real, pais, genero, bio, contra, ruta, activo);
+        in >> id >> artistico >> real >> pais >> genero >> bio >> contra >> fecha >> ruta >> activo>>fechaNacimiento;
+        Artista a(id, artistico, real, pais, genero, bio, contra, ruta, activo,fechaNacimiento);
         artistas.append(a);
 
     }

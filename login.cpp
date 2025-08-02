@@ -7,8 +7,7 @@
 #include <QMessageBox>
 #include <QLineEdit>
 #include <QPushButton>
-#include <QLabel>
-#include"PantallaAdmin.h"
+#include<QLabel>
 #include"menuadmin.h"
 #include"menuinicio.h"
 

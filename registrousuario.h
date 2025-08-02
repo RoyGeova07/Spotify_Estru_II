@@ -35,6 +35,9 @@ private:
     QPushButton*btnVolver;
     QLabel*lblResultado;
     QDateEdit*dateNacimiento;
+    QLineEdit*txtNombreReal;
+    QLineEdit*txtCorreo;
+    QLabel*lblIdUsuario;
 
     GestorUsuarios gestorUsuarios;
 };

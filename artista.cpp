@@ -2,7 +2,7 @@
 
 Artista::Artista(): idArtista(0), activo(true), fechaRegistro(QDate::currentDate()) {}
 
-Artista::Artista(int idArtista, const QString &nombreArtistico, const QString &nombreReal,const QString &pais, const QString &generoMusical, const QString &biografia,const QString &contrasena, const QString &rutaImagen, bool activo): idArtista(idArtista), nombreArtistico(nombreArtistico), nombreReal(nombreReal),pais(pais), generoMusical(generoMusical), biografia(biografia), contrasena(contrasena),fechaRegistro(QDate::currentDate()), rutaImagen(rutaImagen), activo(activo) {}
+Artista::Artista(int idArtista, const QString &nombreArtistico, const QString &nombreReal,const QString &pais, const QString &generoMusical, const QString &biografia,const QString &contrasena, const QString &rutaImagen, bool activo,const QDate &fechaNacimiento): idArtista(idArtista), nombreArtistico(nombreArtistico), nombreReal(nombreReal),pais(pais), generoMusical(generoMusical), biografia(biografia), contrasena(contrasena),fechaRegistro(QDate::currentDate()), rutaImagen(rutaImagen), activo(activo),fechaNacimiento(fechaNacimiento) {}
 
 
 int Artista::getId()const{return idArtista;}
@@ -17,3 +17,5 @@ QString Artista::getRutaImagen()const{return rutaImagen;}
 bool Artista::estaActivo()const{return activo;}
 
 void Artista::desactivar(){activo=false;}
+
+QDate Artista::getFechaNacimiento()const{return fechaNacimiento;}
