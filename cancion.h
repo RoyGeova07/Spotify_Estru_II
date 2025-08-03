@@ -11,7 +11,7 @@ private:
 
     int idCancion;
     QString titulo;
-    int idArtista; // Referencia al artista que la subio
+    QString NombreArtista;
     QString genero;
     QString categoria;//vacio, hasta q el usuario lo modifique
     QString tipo; // single, EP, album
@@ -25,12 +25,12 @@ private:
 public:
     Cancion();
 
-    Cancion(int id, const QString &titulo, int idArtista, const QString &genero, const QString &categoria,const QString &tipo, const QString &descripcion, const QString &rutaAudio,const QString &rutaImagen, const QString &duracion, const QDate &fechaCarga,bool activo=true);
+    Cancion(int id, const QString &titulo, QString NombreArtista, const QString &genero, const QString &categoria,const QString &tipo, const QString &descripcion, const QString &rutaAudio,const QString &rutaImagen, const QString &duracion, const QDate &fechaCarga,bool activo=true);
 
     // Getters
     int getId() const;
     QString getTitulo() const;
-    int getIdArtista() const;
+    QString getNombreArtista() const;
     QString getGenero() const;
     QString getCategoria() const;
     QString getTipo() const;

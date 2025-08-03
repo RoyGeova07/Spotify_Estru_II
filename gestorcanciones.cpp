@@ -18,7 +18,7 @@ bool GestorCanciones::guardarCancion(const Cancion &c)
 
     }
     QDataStream out(&file);
-    out<<c.getId()<<c.getTitulo()<<c.getIdArtista()<< c.getGenero()<<c.getCategoria()<< c.getTipo() <<c.getDescripcion()<<c.getRutaAudio()<<c.getRutaImagen()<<c.getDuracion()<<c.getFechaCarga()<<c.estaActiva();
+    out<<c.getId()<<c.getTitulo()<<c.getNombreArtista()<< c.getGenero()<<c.getCategoria()<< c.getTipo() <<c.getDescripcion()<<c.getRutaAudio()<<c.getRutaImagen()<<c.getDuracion()<<c.getFechaCarga()<<c.estaActiva();
 
     file.close();
     return true;
@@ -36,14 +36,14 @@ QVector<Cancion>GestorCanciones::leerCanciones()
    while(!in.atEnd())
    {
 
-       int id,idArtista;
-       QString titulo,genero,categoria,tipo,descripcion,rutaAudio,rutaImagen,duracion;
+       int id;
+       QString titulo,NombreArtista,genero,categoria,tipo,descripcion,rutaAudio,rutaImagen,duracion;
        QDate fecha;
        bool Activo;
 
-       in>>id>>titulo>>idArtista>>genero>>categoria>>tipo>>descripcion>>rutaAudio>>rutaImagen>>duracion>>fecha>>Activo;
+       in>>id>>titulo>>NombreArtista>>genero>>categoria>>tipo>>descripcion>>rutaAudio>>rutaImagen>>duracion>>fecha>>Activo;
 
-       Cancion c(id,titulo,idArtista,genero,categoria,tipo,descripcion,rutaAudio,rutaImagen,duracion,fecha,Activo);
+       Cancion c(id,titulo,NombreArtista,genero,categoria,tipo,descripcion,rutaAudio,rutaImagen,duracion,fecha,Activo);
        canciones.append(c);
 
    }
@@ -69,5 +69,25 @@ int GestorCanciones::generarId()
 
     }
     return MaxId+1;
+
+}
+
+bool GestorCanciones::CancionDuplicada(const Cancion &NuevaCancion)
+{
+
+    QVector<Cancion>canciones=leerCanciones();
+
+    for(const Cancion&c:canciones)
+    {
+
+        if(c.getTitulo()==NuevaCancion.getTitulo()||c.getRutaAudio()==NuevaCancion.getRutaAudio()||c.getRutaImagen()==NuevaCancion.getRutaImagen())
+        {
+
+            return true;//YA EXISTE
+
+        }
+
+    }
+    return false;
 
 }

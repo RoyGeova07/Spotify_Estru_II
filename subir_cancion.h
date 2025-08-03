@@ -41,6 +41,7 @@ private:
     struct WidgetCancion
     {
 
+        QLabel*lblIdCancion;
         QLineEdit*txtTitulo;
         QComboBox*txtGenero;
         QLineEdit*txtDuracion;
@@ -59,7 +60,7 @@ private:
 
     void configurarUI();
     void crearPestañasCanciones(int cantidad);
-    QWidget* crearFormularioCancion(int index);
+    QWidget* crearFormularioCancion(int index,int ID);
 
 };
 

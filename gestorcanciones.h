@@ -18,6 +18,7 @@ public:
     bool guardarCancion(const Cancion &c);
     QVector<Cancion> leerCanciones();
     int generarId();  // Generador de ID incremental
+    bool CancionDuplicada(const Cancion& NuevaCancion);
 
 };
 

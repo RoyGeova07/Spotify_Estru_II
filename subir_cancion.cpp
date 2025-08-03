@@ -159,12 +159,14 @@ void Subir_Cancion::tipoSeleccionado(const QString &tipo)
 
 }
 
-QWidget*Subir_Cancion::crearFormularioCancion(int /*index*/)
+QWidget*Subir_Cancion::crearFormularioCancion(int /*index*/,int ID)
 {
 
     QWidget*contenido=new QWidget;
     WidgetCancion w;
 
+    w.lblIdCancion=new QLabel(QString("ID asignado %1").arg(ID));
+    w.lblIdCancion->setStyleSheet("font-size: 14px; color: #4CAF50");
     w.txtTitulo=new QLineEdit;
     w.txtGenero=new QComboBox;
     w.txtGenero->addItems({"Pop","Corridos","Cristianos","Electronica","Regueton","Rock","Clasicas"});
@@ -199,6 +201,7 @@ QWidget*Subir_Cancion::crearFormularioCancion(int /*index*/)
     QVBoxLayout*layout= new QVBoxLayout(contenido);
     layout->setSpacing(6);
 
+    layout->addWidget(w.lblIdCancion);
     layout->addWidget(new QLabel("Título:"));
     layout->addWidget(w.txtTitulo);
 
@@ -244,10 +247,14 @@ void Subir_Cancion::crearPestañasCanciones(int cantidad)
     tabsCanciones->clear();
     cancionesWidgets.clear();
 
+    GestorCanciones gestor;
+    int IDinicial=gestor.generarId();//solo se generara una vez
+
     for(int i=0;i<cantidad;++i)
     {
 
-        QWidget*pestania=crearFormularioCancion(i+1);
+        int idActual=IDinicial+i;
+        QWidget*pestania=crearFormularioCancion(i,idActual);
         tabsCanciones->addTab(pestania,"Cancion"+QString::number(i+1));
 
     }
@@ -294,6 +301,9 @@ void Subir_Cancion::subirCanciones()
 
     int CancionesGuardadas=0;
 
+    //aqui se obtiene el primer ID disponible de una sola vez
+    int IDInicial=gestor.generarId();
+
     for(int i=0;i<cancionesWidgets.size();i++)
     {
 
@@ -314,8 +324,18 @@ void Subir_Cancion::subirCanciones()
             return;
 
         }
-        int id=gestor.generarId();
-        Cancion c(id, titulo, artista.getId(), genero, categoria, tipo, descripcion,rutaAudio, rutaImagen, duracion, QDate::currentDate(), true);
+        //Aqui se asgina el id
+        int id=IDInicial+i;
+        Cancion c(id, titulo, artista.getNombreArtistico(), genero, categoria, tipo, descripcion,rutaAudio, rutaImagen, duracion, QDate::currentDate(), true);
+
+        //SE EVITA LOS DUPLICADOS
+        if(gestor.CancionDuplicada(c))
+        {
+
+            QMessageBox::warning(this,"Cancion Duplicada",QString("La cancion %1 no se puede guardar porque ya existe una cancion con el mismo titulo, audio o imagen.").arg(i+1));
+            return;
+
+        }
 
         if(gestor.guardarCancion(c))
         {

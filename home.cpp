@@ -15,6 +15,8 @@
 #include<gestorartistas.h>
 #include<QDebug>
 #include<QStackedLayout>
+#include"cancion.h"
+#include"gestorcanciones.h"
 
 Home::Home(const Usuario& usuarioActivo, QWidget *parent): QWidget(parent), usuario(usuarioActivo)
 {
@@ -22,6 +24,9 @@ Home::Home(const Usuario& usuarioActivo, QWidget *parent): QWidget(parent), usua
     setFixedSize(1100, 700);
 
     QHBoxLayout*layoutColumnas=new QHBoxLayout(this);  //Columnaa principal
+
+    GestorCanciones gestorCanciones;
+    QVector<Cancion>todasCanciones=gestorCanciones.leerCanciones();
 
     // ================== COLUMNA IZQUIERDA ==================
     QVBoxLayout *colBiblioteca=new QVBoxLayout();
@@ -190,14 +195,72 @@ Home::Home(const Usuario& usuarioActivo, QWidget *parent): QWidget(parent), usua
     layoutCanciones->setContentsMargins(10,10,10,10);
 
     // Canciones (widgets en fila)
-    for(int i=0;i<1;++i)
+    for(const Cancion& c:todasCanciones)
     {
 
-        QLabel*cancion=new QLabel("🎵 Canción "+QString::number(i+1));
-        cancion->setFixedSize(120, 120);
-        cancion->setAlignment(Qt::AlignCenter);
-        cancion->setStyleSheet("background-color: #222; border-radius: 10px; color: white;");
-        layoutCanciones->addWidget(cancion);
+        qDebug()<<"Artista"<<c.getNombreArtista();
+        if(c.getTipo()=="Single"&&c.estaActiva())
+        {
+
+            QFrame*contenedorItem=new QFrame();
+            contenedorItem->setFixedWidth(130);
+            contenedorItem->setFrameShape(QFrame::Box);
+            contenedorItem->setStyleSheet(R"(
+                QFrame {
+                    border: 2px solid transparent;
+                    border-radius: 10px;
+                    background-color: #111;
+                }
+                QFrame:hover {
+                    border: 2px solid #ff3333;
+                }
+            )");
+            QVBoxLayout*layoutItem=new QVBoxLayout(contenedorItem);
+            layoutItem->setSpacing(5);
+            layoutItem->setAlignment(Qt::AlignCenter);
+
+            QPushButton*btnImagen=new QPushButton();
+            btnImagen->setFixedSize(130,130);
+            btnImagen->setCursor(Qt::PointingHandCursor);
+            btnImagen->setStyleSheet(R"(
+                QPushButton {
+                    border: none;
+                    background-color: #222;
+                }
+            )");
+
+            QPixmap pix(c.getRutaImagen());
+            if(!pix.isNull())
+            {
+
+                QPixmap scaled=pix.scaled(btnImagen->size(),Qt::KeepAspectRatioByExpanding,Qt::SmoothTransformation);
+                btnImagen->setIcon(scaled);
+                btnImagen->setIconSize(btnImagen->size());
+
+            }else{
+
+                btnImagen->setText("Sin imagen");
+                btnImagen->setStyleSheet("color: white; background-color: #800; border-radius: 10px;");
+
+            }
+
+            QLabel*lblTitulo=new QLabel(c.getTitulo());
+            lblTitulo->setStyleSheet("color: white; font-weight: bold;");
+            lblTitulo->setAlignment(Qt::AlignCenter);
+            lblTitulo->setWordWrap(true);//se utiliza para habilitar o deshabilitar el ajuste de linea de texto en un widget de etiqueta (QLabel).
+
+            QLabel*lblArtista=new QLabel(c.getNombreArtista());
+            lblArtista->setStyleSheet("color: gray; font-size: 12px;");
+            lblArtista->setAlignment(Qt::AlignCenter);
+            lblArtista->setWordWrap(true);
+
+            layoutItem->addWidget(btnImagen);
+            layoutItem->addWidget(lblTitulo);
+            layoutItem->addWidget(lblArtista);
+
+            layoutCanciones->addWidget(contenedorItem);
+
+        }
 
     }
 
