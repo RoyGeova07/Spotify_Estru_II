@@ -183,7 +183,7 @@ Home::Home(const Usuario& usuarioActivo, QWidget *parent): QWidget(parent), usua
     //Scroll horizontal
     QScrollArea* scrollCanciones=new QScrollArea();
     scrollCanciones->setWidgetResizable(true);
-    scrollCanciones->setFixedHeight(180);
+    scrollCanciones->setFixedHeight(225);//TAMANIO DEL SCROLL DE SINGLE
     scrollCanciones->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
     scrollCanciones->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     scrollCanciones->setStyleSheet("border: none;");
@@ -194,12 +194,12 @@ Home::Home(const Usuario& usuarioActivo, QWidget *parent): QWidget(parent), usua
     layoutCanciones->setSpacing(20);
     layoutCanciones->setContentsMargins(10,10,10,10);
 
-    // Canciones (widgets en fila)
+    //-------Canciones tipo SINGLE--------
     for(const Cancion& c:todasCanciones)
     {
 
         qDebug()<<"Artista"<<c.getNombreArtista();
-        if(c.getTipo()=="Single"&&c.estaActiva())
+        if(c.getTipo()==Tipo::Single&&c.estaActiva())
         {
 
             QFrame*contenedorItem=new QFrame();
@@ -268,13 +268,27 @@ Home::Home(const Usuario& usuarioActivo, QWidget *parent): QWidget(parent), usua
     layoutScroll->addWidget(scrollCanciones);
 
     // ==================== SECCION: EP ====================
+    QMap<QString, QVector<Cancion>> epsAgrupados;
+
+    for(const Cancion& c:todasCanciones)
+    {
+
+        if(c.getTipo()==Tipo::EP&&c.estaActiva())
+        {
+
+            epsAgrupados[c.getNombreArtista()].append(c);
+
+        }
+
+    }
+
     QLabel* lblEp =new QLabel("EP");
     lblEp->setStyleSheet("font-size: 20px; font-weight: bold;");
     layoutScroll->addWidget(lblEp);
 
     QScrollArea*scrollEp= new QScrollArea();
     scrollEp->setWidgetResizable(true);
-    scrollEp->setFixedHeight(160);
+    scrollEp->setFixedHeight(220);
     scrollEp->setStyleSheet("border: none;");
     scrollEp->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
     scrollEp->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -285,14 +299,69 @@ Home::Home(const Usuario& usuarioActivo, QWidget *parent): QWidget(parent), usua
     layoutEp->setContentsMargins(10,10,10,10);
 
     // EPs
-    for(int i=0;i<4;++i)
+    for(auto i=epsAgrupados.begin();i!=epsAgrupados.end();++i)
     {
 
-        QLabel*ep=new QLabel("💿 EP " + QString::number(i+1));
-        ep->setFixedSize(120, 120);
-        ep->setAlignment(Qt::AlignCenter);
-        ep->setStyleSheet("background-color: #222; border-radius: 10px; color: white;");
-        layoutEp->addWidget(ep);
+        const QVector<Cancion>& epCanciones=i.value();
+        if(epCanciones.size()>=3)//EL EP ES VALIDO CON AL MENOS 3 CANCIONES
+        {
+
+            QFrame*contenedorItem=new QFrame();
+            contenedorItem->setFixedWidth(130);
+            contenedorItem->setFrameShape(QFrame::Box);
+            contenedorItem->setStyleSheet(R"(
+                QFrame {
+                    border: 2px solid transparent;
+                    border-radius: 10px;
+                    background-color: #111;
+                }
+                QFrame:hover {
+                    border: 2px solid #ff3333;
+                }
+            )");
+
+            QVBoxLayout*layoutItem=new QVBoxLayout(contenedorItem);
+            layoutItem->setSpacing(5);
+            layoutItem->setAlignment(Qt::AlignCenter);
+
+            QPushButton*btnImagen=new QPushButton();
+            btnImagen->setFixedSize(130,130);
+            btnImagen->setCursor(Qt::PointingHandCursor);
+            btnImagen->setStyleSheet(R"(
+                QPushButton {
+                    border: none;
+                    background-color: #222;
+                }
+            )");
+
+            //Se usa la imagen de la primera cancion como portada representativa
+            QPixmap pix(epCanciones.first().getRutaImagen());
+            if(!pix.isNull())
+            {
+
+                QPixmap scaled=pix.scaled(btnImagen->size(),Qt::KeepAspectRatio,Qt::SmoothTransformation);
+                btnImagen->setIcon(scaled);
+                btnImagen->setIconSize(btnImagen->size());
+
+            }else{
+
+                btnImagen->setText("Sin imagen");
+                btnImagen->setStyleSheet("color: white; background-color: #800; border-radius: 10px;");
+
+            }
+
+            QLabel*lblTitulo=new QLabel("EP de "+epCanciones.first().getNombreArtista());
+            lblTitulo->setStyleSheet("color: white; font-weight: bold;");
+            lblTitulo->setAlignment(Qt::AlignCenter);
+            lblTitulo->setWordWrap(true);
+
+            layoutItem->addWidget(btnImagen);
+            layoutItem->addWidget(lblTitulo);
+            layoutEp->addWidget(contenedorItem);
+
+            //CONNECT FUTURO AQUI
+
+        }
 
     }
 
@@ -300,13 +369,27 @@ Home::Home(const Usuario& usuarioActivo, QWidget *parent): QWidget(parent), usua
     layoutScroll->addWidget(scrollEp);
 
     // ==================== SECCION: Albumes ====================
+    QMap<QString, QVector<Cancion>> AlbumAgrupados;
+
+    for(const Cancion&c:todasCanciones)
+    {
+
+        if(c.getTipo()==Tipo::Album&&c.estaActiva())
+        {
+
+            AlbumAgrupados[c.getNombreArtista()].append(c);
+
+        }
+
+    }
+
     QLabel*lblAlbums=new QLabel("Albums");
     lblAlbums->setStyleSheet("font-size: 20px; font-weight: bold;");
     layoutScroll->addWidget(lblAlbums);
 
     QScrollArea*scrollAlbums= new QScrollArea();
     scrollAlbums->setWidgetResizable(true);
-    scrollAlbums->setFixedHeight(160);
+    scrollAlbums->setFixedHeight(220);
     scrollAlbums->setStyleSheet("border: none;");
     scrollAlbums->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
     scrollAlbums->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -316,24 +399,80 @@ Home::Home(const Usuario& usuarioActivo, QWidget *parent): QWidget(parent), usua
     layoutAlbums->setSpacing(20);
     layoutAlbums->setContentsMargins(10,10,10,10);
 
-    // Álbumes
-    for (int i = 0; i < 10; ++i)
+    //Mostrar albumes validos (minimo 8 canciones activas por artista)
+    for(auto i=AlbumAgrupados.begin();i!=AlbumAgrupados.end();++i)
     {
-        QLabel* album = new QLabel("📀 Álbum " + QString::number(i+1));
-        album->setFixedSize(120, 120);
-        album->setAlignment(Qt::AlignCenter);
-        album->setStyleSheet("background-color: #222; border-radius: 10px; color: white;");
-        layoutAlbums->addWidget(album);
+
+        const QVector<Cancion>& albumCanciones=i.value();
+        if(albumCanciones.size()>=8)//minimo 8 canciones por album
+        {
+
+            QFrame*contenedorItem=new QFrame();
+            contenedorItem->setFixedWidth(130);
+            contenedorItem->setFrameShape(QFrame::Box);
+            contenedorItem->setStyleSheet(R"(
+                QFrame {
+                    border: 2px solid transparent;
+                    border-radius: 10px;
+                    background-color: #111;
+                }
+                QFrame:hover {
+                    border: 2px solid #ff3333;
+                }
+            )");
+
+            QVBoxLayout*layoutItem= new QVBoxLayout(contenedorItem);
+            layoutItem->setSpacing(5);
+            layoutItem->setAlignment(Qt::AlignCenter);
+
+            QPushButton*btnImagen = new QPushButton();
+            btnImagen->setFixedSize(130, 130);
+            btnImagen->setCursor(Qt::PointingHandCursor);
+            btnImagen->setStyleSheet(R"(
+                QPushButton {
+                    border: none;
+                    background-color: #222;
+                }
+            )");
+
+            //Imagen representativa del Album = la de la primera cancion
+            QPixmap pix(albumCanciones.first().getRutaImagen());
+            if(!pix.isNull())
+            {
+
+                QPixmap scaled =pix.scaled(btnImagen->size(),Qt::KeepAspectRatio,Qt::SmoothTransformation);
+                btnImagen->setIcon(scaled);
+                btnImagen->setIconSize(btnImagen->size());
+
+            }else{
+
+                btnImagen->setText("Sin imagen");
+                btnImagen->setStyleSheet("color: white; background-color: #800; border-radius: 10px;");
+
+            }
+
+            QLabel*lblTitulo =new QLabel("Album de "+albumCanciones.first().getNombreArtista());
+            lblTitulo->setStyleSheet("color: white; font-weight: bold;");
+            lblTitulo->setAlignment(Qt::AlignCenter);
+            lblTitulo->setWordWrap(true);
+
+            layoutItem->addWidget(btnImagen);
+            layoutItem->addWidget(lblTitulo);
+            layoutAlbums->addWidget(contenedorItem);
+
+        }
+
     }
 
     scrollAlbums->setWidget(contenedorAlbums);
     layoutScroll->addWidget(scrollAlbums);
 
+//==========TERMINA AREA SCROLL==========================================================================
+
+//=====SCROLL ARTISTAS====================================================================================
     QLabel *lblArtistas =new QLabel("Artistas populares");
     lblArtistas->setStyleSheet("font-size: 20px; font-weight: bold;");
     layoutScroll->addWidget(lblArtistas);
-
-//=====SCROLL ARTISTAS====================================================================================
 
     QScrollArea*scrollArtistas=new QScrollArea();
     scrollArtistas->setWidgetResizable(true);

@@ -12,6 +12,7 @@ debug/menuinicio.o
 debug/registroartista.o
 debug/registrousuario.o
 debug/subir_cancion.o
+debug/tipos.o
 debug/usuario.o
 debug/vistapreviaimagen.o
 debug/qrc_assets.o

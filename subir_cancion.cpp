@@ -230,7 +230,7 @@ QWidget*Subir_Cancion::crearFormularioCancion(int /*index*/,int ID)
     contenedorImagen->addStretch();
     contenedorImagen->addWidget(w.vistaPreviaImagen);
     contenedorImagen->addStretch();
-    layout->addLayout(contenedorImagen);//MINIUATURA MINIATURAAAAAAAA - VEGETA77777
+    layout->addLayout(contenedorImagen);//MINIUATURA MINIATURAAAAAAAA
 
     //AGREGO SCROLL PARA MEJOR ESTETICA EN EL FRONTED
     QScrollArea*scroll=new QScrollArea;
@@ -297,12 +297,16 @@ void Subir_Cancion::subirCanciones()
 {
 
     GestorCanciones gestor;
-    QString tipo = comboTipo->currentText();
-
-    int CancionesGuardadas=0;
+    Tipo tipoEnum =stringToTipo(comboTipo->currentText());
 
     //aqui se obtiene el primer ID disponible de una sola vez
     int IDInicial=gestor.generarId();
+
+    QVector<Cancion>cancionesAGuardar;
+
+    //Se usaa QSet<QString> para llevar control de los titulos y rutas ya ingresados en el formulario
+    QSet<QString> titulosUnicos;
+    QSet<QString> rutasAudioUnicas;
 
     for(int i=0;i<cancionesWidgets.size();i++)
     {
@@ -324,12 +328,35 @@ void Subir_Cancion::subirCanciones()
             return;
 
         }
+
+        //aqui se verifica duplicados internos, dentro del formulaario
+        if(titulosUnicos.contains(titulo))
+        {
+
+            QMessageBox::warning(this,"Titulo duplicado",QString("El título '%1' esta repetido dentro del mismo formulario.").arg(titulo));
+            return;
+
+        }
+
+        if(rutasAudioUnicas.contains(rutaAudio))
+        {
+
+            QMessageBox::warning(this,"Ruta de audio duplicada",QString("La ruta de audio '%1' esta repetida dentro del mismo formulario.").arg(rutaAudio));
+            return;
+
+        }
+
+        titulosUnicos.insert(titulo);
+        rutasAudioUnicas.insert(rutaAudio);
+
+        Genero g=stringToGenero(genero);
+        Categoria c=stringToCategoria(categoria);
+
         //Aqui se asgina el id
         int id=IDInicial+i;
-        Cancion c(id, titulo, artista.getNombreArtistico(), genero, categoria, tipo, descripcion,rutaAudio, rutaImagen, duracion, QDate::currentDate(), true);
+        Cancion cancion(id, titulo, artista.getNombreArtistico(), g, c, tipoEnum, descripcion,rutaAudio, rutaImagen, duracion, QDate::currentDate(), true);
 
-        //SE EVITA LOS DUPLICADOS
-        if(gestor.CancionDuplicada(c))
+        if(gestor.CancionDuplicada(cancion))
         {
 
             QMessageBox::warning(this,"Cancion Duplicada",QString("La cancion %1 no se puede guardar porque ya existe una cancion con el mismo titulo, audio o imagen.").arg(i+1));
@@ -337,21 +364,25 @@ void Subir_Cancion::subirCanciones()
 
         }
 
-        if(gestor.guardarCancion(c))
-        {
-
-            CancionesGuardadas++;
-
-        }else{
-
-            QMessageBox::critical(this, "Error",QString("No se pudo guardar la canción %1.").arg(i+1));
-
-        }
-
+        cancionesAGuardar.append(cancion);// solo si pasa toda la validacion
 
     }
 
-    if(CancionesGuardadas==cancionesWidgets.size())
+    //SE EVITA LOS DUPLICADOS
+    int CancionesGuardadas=0;
+    for(const Cancion& c:cancionesAGuardar)
+    {
+
+        if(gestor.guardarCancion(c))
+        {
+
+            ++CancionesGuardadas;
+
+        }
+
+    }
+
+    if(CancionesGuardadas==cancionesAGuardar.size())
     {
 
         QMessageBox::information(this,"Exito","¡Todas las canciones se guardaron correctamente!");

@@ -3,6 +3,7 @@
 
 #include<QString>
 #include<QDate>
+#include"tipos.h"
 
 class Cancion
 {
@@ -12,9 +13,9 @@ private:
     int idCancion;
     QString titulo;
     QString NombreArtista;
-    QString genero;
-    QString categoria;//vacio, hasta q el usuario lo modifique
-    QString tipo; // single, EP, album
+    Genero genero;
+    Categoria categoria;//vacio, hasta q el usuario lo modifique
+    Tipo tipo; // single, EP, album
     QString descripcion;
     QString rutaAudio;//mp3 o mp4
     QString rutaImagen;
@@ -25,15 +26,15 @@ private:
 public:
     Cancion();
 
-    Cancion(int id, const QString &titulo, QString NombreArtista, const QString &genero, const QString &categoria,const QString &tipo, const QString &descripcion, const QString &rutaAudio,const QString &rutaImagen, const QString &duracion, const QDate &fechaCarga,bool activo=true);
+    Cancion(int id, const QString &titulo, QString NombreArtista,Genero genero,Categoria categoria,Tipo tipo, const QString &descripcion, const QString &rutaAudio,const QString &rutaImagen, const QString &duracion, const QDate &fechaCarga,bool activo=true);
 
     // Getters
     int getId() const;
     QString getTitulo() const;
     QString getNombreArtista() const;
-    QString getGenero() const;
-    QString getCategoria() const;
-    QString getTipo() const;
+    Genero getGenero() const;
+    Categoria getCategoria() const;
+    Tipo getTipo() const;
     QString getDescripcion() const;
     QString getRutaAudio() const;
     QString getRutaImagen() const;

@@ -12,6 +12,7 @@ release/menuinicio.o
 release/registroartista.o
 release/registrousuario.o
 release/subir_cancion.o
+release/tipos.o
 release/usuario.o
 release/vistapreviaimagen.o
 release/qrc_assets.o
