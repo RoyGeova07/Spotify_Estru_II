@@ -193,6 +193,7 @@ Home::Home(const Usuario& usuarioActivo, QWidget *parent): QWidget(parent), usua
     QHBoxLayout* layoutCanciones=new QHBoxLayout(contenedorCanciones);
     layoutCanciones->setSpacing(20);
     layoutCanciones->setContentsMargins(10,10,10,10);
+    layoutCanciones->setAlignment(Qt::AlignLeft);
 
     //-------Canciones tipo SINGLE--------
     for(const Cancion& c:todasCanciones)
@@ -297,6 +298,7 @@ Home::Home(const Usuario& usuarioActivo, QWidget *parent): QWidget(parent), usua
     QHBoxLayout*layoutEp=new QHBoxLayout(contenedorEp);
     layoutEp->setSpacing(20);
     layoutEp->setContentsMargins(10,10,10,10);
+    layoutEp->setAlignment(Qt::AlignLeft);
 
     // EPs
     for(auto i=epsAgrupados.begin();i!=epsAgrupados.end();++i)
@@ -398,6 +400,7 @@ Home::Home(const Usuario& usuarioActivo, QWidget *parent): QWidget(parent), usua
     QHBoxLayout* layoutAlbums=new QHBoxLayout(contenedorAlbums);
     layoutAlbums->setSpacing(20);
     layoutAlbums->setContentsMargins(10,10,10,10);
+    layoutAlbums->setAlignment(Qt::AlignLeft);
 
     //Mostrar albumes validos (minimo 8 canciones activas por artista)
     for(auto i=AlbumAgrupados.begin();i!=AlbumAgrupados.end();++i)

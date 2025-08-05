@@ -11,7 +11,6 @@ debug/menuadmin.o
 debug/menuinicio.o
 debug/registroartista.o
 debug/registrousuario.o
-debug/subir_cancion.o
 debug/tipos.o
 debug/usuario.o
 debug/vistapreviaimagen.o
@@ -24,5 +23,4 @@ debug/moc_menuadmin.o
 debug/moc_menuinicio.o
 debug/moc_registroartista.o
 debug/moc_registrousuario.o
-debug/moc_subir_cancion.o
 debug/moc_vistapreviaimagen.o

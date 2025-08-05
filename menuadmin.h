@@ -8,6 +8,12 @@
 #include <QLabel>
 #include <QPixmap>
 #include "artista.h"
+#include<QLineEdit>
+#include<QTextEdit>
+#include<QComboBox>
+#include<QTabWidget>
+#include<QVector>
+#include"vistapreviaimagen.h"
 
 class MenuAdmin : public QWidget
 {
@@ -23,6 +29,11 @@ private slots:
     //void abrirMiMusica();
     void CerrarSesion();
 
+    void seleccionarAudio();
+    void tipoSeleccionado(const QString& tipo);
+    void subirCanciones();
+    void SeleccionarImagen();
+
 private:
 
     Artista artista;
@@ -37,6 +48,37 @@ private:
 
     void configurarUI();
     void estiloBoton(QPushButton* boton, const QString& color);
+
+    //=========================================================
+    QLabel*lblNombreArtista;
+    QComboBox*comboTipo;  // Single, EP, Álbum
+    QTabWidget*tabsCanciones;
+    QPushButton*btnSubir;
+
+    struct WidgetCancion
+    {
+
+        QLabel*lblIdCancion;
+        QLineEdit*txtTitulo;
+        QComboBox*txtGenero;
+        QLineEdit*txtDuracion;
+        QComboBox*comboCategoria;
+        QTextEdit*txtDescripcion;
+        QLineEdit*txtRutaAudio;
+        QLineEdit*txtRutaImagen;
+        QPushButton*btnSeleccionarAudio;
+        QPushButton*btnSeleccionarImagen;
+        VistaPreviaImagen* vistaPreviaImagen;
+
+    };
+
+
+    QVector<WidgetCancion>cancionesWidgets;
+
+    void crearPestañasCanciones(int cantidad);
+    QWidget* crearFormularioCancion(int index,int ID);
+
+    QVBoxLayout*layoutDerecho;
 
 };
 
