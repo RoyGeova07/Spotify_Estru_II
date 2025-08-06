@@ -22,6 +22,7 @@ SOURCES += \
     menuinicio.cpp \
     registroartista.cpp \
     registrousuario.cpp \
+    reproductormusica.cpp \
     tipos.cpp \
     usuario.cpp \
     vistapreviaimagen.cpp
@@ -39,6 +40,7 @@ HEADERS += \
     menuinicio.h \
     registroartista.h \
     registrousuario.h \
+    reproductormusica.h \
     tipos.h \
     usuario.h \
     vistapreviaimagen.h

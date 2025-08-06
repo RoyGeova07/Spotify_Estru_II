@@ -3,10 +3,10 @@
 Cancion::Cancion() : idCancion(0),fechaCarga(QDate::currentDate()), activo(true) {}
 
 
-Cancion::Cancion(int id, const QString &titulo, QString NombreArtista,Genero genero,Categoria categoria,Tipo tipo, const QString &descripcion,const QString &rutaAudio, const QString &rutaImagen, const QString &duracion,const QDate &fechaCarga, bool activo)
-    : idCancion(id), titulo(titulo), NombreArtista(NombreArtista), genero(genero), categoria(categoria),
+Cancion::Cancion(int reproducciones,int id, const QString &titulo, QString NombreArtista,Genero genero,Categoria categoria,Tipo tipo, const QString &descripcion,const QString &rutaAudio, const QString &rutaImagen, const QString &duracion,const QDate &fechaCarga, bool activo)
+    : idCancion(id),titulo(titulo), NombreArtista(NombreArtista), genero(genero), categoria(categoria),
     tipo(tipo), descripcion(descripcion), rutaAudio(rutaAudio), rutaImagen(rutaImagen),
-    duracion(duracion), fechaCarga(fechaCarga), activo(activo) {}
+    duracion(duracion), fechaCarga(fechaCarga), activo(activo),reproducciones(reproducciones) {}
 
 
 int Cancion::getId()const{return idCancion;}
@@ -21,5 +21,13 @@ QString Cancion::getRutaImagen()const{return rutaImagen;}
 QString Cancion::getDuracion()const{return duracion;}
 QDate Cancion::getFechaCarga() const{return fechaCarga;}
 bool Cancion::estaActiva()const {return activo; }
+int Cancion::getReproducciones()const{return reproducciones;}
+void Cancion::setReproducciones(int r){reproducciones=r;}
+void Cancion::incrementarReproducciones()
+{
+
+    reproducciones++;
+
+}
 
 void Cancion::desactivar(){activo =false;}

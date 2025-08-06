@@ -11,6 +11,7 @@ release/menuadmin.o
 release/menuinicio.o
 release/registroartista.o
 release/registrousuario.o
+release/reproductormusica.o
 release/tipos.o
 release/usuario.o
 release/vistapreviaimagen.o
@@ -23,4 +24,5 @@ release/moc_menuadmin.o
 release/moc_menuinicio.o
 release/moc_registroartista.o
 release/moc_registrousuario.o
+release/moc_reproductormusica.o
 release/moc_vistapreviaimagen.o

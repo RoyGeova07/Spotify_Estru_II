@@ -4,6 +4,7 @@
 #include <QDialog>
 #include"usuario.h"
 #include"artista.h"
+#include"reproductormusica.h"
 
 class Home : public QWidget
 {
@@ -19,6 +20,7 @@ private slots:
 
 private:
 
+    //ReproductorMusica*ventanaReproductor=nullptr;
     Usuario usuario;
 
 };

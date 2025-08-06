@@ -22,11 +22,12 @@ private:
     QString duracion; // RECORDAR: usar QString para facilitar el formato hh:mm:ss
     QDate fechaCarga;
     bool activo;
+    int reproducciones;
 
 public:
     Cancion();
 
-    Cancion(int id, const QString &titulo, QString NombreArtista,Genero genero,Categoria categoria,Tipo tipo, const QString &descripcion, const QString &rutaAudio,const QString &rutaImagen, const QString &duracion, const QDate &fechaCarga,bool activo=true);
+    Cancion(int reproducciones,int id, const QString &titulo, QString NombreArtista,Genero genero,Categoria categoria,Tipo tipo, const QString &descripcion, const QString &rutaAudio,const QString &rutaImagen, const QString &duracion, const QDate &fechaCarga,bool activo=true);
 
     // Getters
     int getId() const;
@@ -41,6 +42,9 @@ public:
     QString getDuracion() const;
     QDate getFechaCarga() const;
     bool estaActiva() const;
+    int getReproducciones()const;
+    void setReproducciones(int r);
+    void incrementarReproducciones();
 
     // Logica
     void desactivar();

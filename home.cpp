@@ -175,7 +175,7 @@ Home::Home(const Usuario& usuarioActivo, QWidget *parent): QWidget(parent), usua
     lblCreadoPara->setStyleSheet("font-size: 22px; font-weight: bold;");
     layoutScroll->addWidget(lblCreadoPara);
 
-    // ==================== SECCION: Canciones ====================
+    // ==================== SECCION: Canciones(SINGLE) ====================
     QLabel* lblCanciones=new QLabel("Canciones");
     lblCanciones->setStyleSheet("font-size: 20px; font-weight: bold;");
     layoutScroll->addWidget(lblCanciones);
@@ -221,7 +221,7 @@ Home::Home(const Usuario& usuarioActivo, QWidget *parent): QWidget(parent), usua
             layoutItem->setAlignment(Qt::AlignCenter);
 
             QPushButton*btnImagen=new QPushButton();
-            btnImagen->setFixedSize(130,130);
+            btnImagen->setFixedSize(110,110);
             btnImagen->setCursor(Qt::PointingHandCursor);
             btnImagen->setStyleSheet(R"(
                 QPushButton {
@@ -260,6 +260,16 @@ Home::Home(const Usuario& usuarioActivo, QWidget *parent): QWidget(parent), usua
             layoutItem->addWidget(lblArtista);
 
             layoutCanciones->addWidget(contenedorItem);
+
+            QObject::connect(btnImagen,&QPushButton::clicked,this,[=]()
+            {
+
+                QVector<Cancion>unicaCancion={c};//SOLO 1 CANCIONNNNZ
+                ReproductorMusica*r=new ReproductorMusica(unicaCancion,usuarioActivo,nullptr);
+                r->show();
+                this->hide();
+
+            });
 
         }
 
@@ -312,13 +322,14 @@ Home::Home(const Usuario& usuarioActivo, QWidget *parent): QWidget(parent), usua
             contenedorItem->setFixedWidth(130);
             contenedorItem->setFrameShape(QFrame::Box);
             contenedorItem->setStyleSheet(R"(
-                QFrame {
+              QFrame {
                     border: 2px solid transparent;
-                    border-radius: 10px;
+                    border-radius: 12px;
                     background-color: #111;
                 }
                 QFrame:hover {
                     border: 2px solid #ff3333;
+                    background-color: #181818;
                 }
             )");
 
@@ -327,7 +338,7 @@ Home::Home(const Usuario& usuarioActivo, QWidget *parent): QWidget(parent), usua
             layoutItem->setAlignment(Qt::AlignCenter);
 
             QPushButton*btnImagen=new QPushButton();
-            btnImagen->setFixedSize(130,130);
+            btnImagen->setFixedSize(110,110);
             btnImagen->setCursor(Qt::PointingHandCursor);
             btnImagen->setStyleSheet(R"(
                 QPushButton {
@@ -361,7 +372,13 @@ Home::Home(const Usuario& usuarioActivo, QWidget *parent): QWidget(parent), usua
             layoutItem->addWidget(lblTitulo);
             layoutEp->addWidget(contenedorItem);
 
-            //CONNECT FUTURO AQUI
+            QObject::connect(btnImagen,&QPushButton::clicked,this,[=](){
+
+                ReproductorMusica*r=new ReproductorMusica(epCanciones,usuarioActivo,nullptr);
+                r->show();
+                this->hide();
+
+            });
 
         }
 
@@ -429,7 +446,7 @@ Home::Home(const Usuario& usuarioActivo, QWidget *parent): QWidget(parent), usua
             layoutItem->setAlignment(Qt::AlignCenter);
 
             QPushButton*btnImagen = new QPushButton();
-            btnImagen->setFixedSize(130, 130);
+            btnImagen->setFixedSize(110, 110);
             btnImagen->setCursor(Qt::PointingHandCursor);
             btnImagen->setStyleSheet(R"(
                 QPushButton {
@@ -463,6 +480,14 @@ Home::Home(const Usuario& usuarioActivo, QWidget *parent): QWidget(parent), usua
             layoutItem->addWidget(lblTitulo);
             layoutAlbums->addWidget(contenedorItem);
 
+            QObject::connect(btnImagen,&QPushButton::clicked,this,[=](){
+
+                ReproductorMusica*r=new ReproductorMusica(albumCanciones,usuarioActivo,nullptr) ;
+                r->show();
+                this->hide();
+
+            });
+
         }
 
     }
@@ -473,7 +498,7 @@ Home::Home(const Usuario& usuarioActivo, QWidget *parent): QWidget(parent), usua
 //==========TERMINA AREA SCROLL==========================================================================
 
 //=====SCROLL ARTISTAS====================================================================================
-    QLabel *lblArtistas =new QLabel("Artistas populares");
+    QLabel *lblArtistas =new QLabel("Artistas");
     lblArtistas->setStyleSheet("font-size: 20px; font-weight: bold;");
     layoutScroll->addWidget(lblArtistas);
 
@@ -619,6 +644,7 @@ Home::Home(const Usuario& usuarioActivo, QWidget *parent): QWidget(parent), usua
 void Home::Regresar()
 {
 
+    //NOTA:this como padre -> provoca que se cierre tambien el hijo, el nullptr no se mantiene como padre
     MenuInicio*m=new MenuInicio(nullptr);
     m->show();
     this->close();

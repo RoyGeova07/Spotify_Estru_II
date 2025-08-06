@@ -1,5 +1,4 @@
 #include "menuadmin.h"
-#include"subir_cancion.h"
 #include<QGraphicsDropShadowEffect>
 #include<QPainter>
 #include<QPainterPath>
@@ -547,7 +546,7 @@ void MenuAdmin::subirCanciones()
 
         //Aqui se asgina el id
         int id=IDInicial+i;
-        Cancion cancion(id, titulo, artista.getNombreArtistico(), g, c, tipoEnum, descripcion,rutaAudio, rutaImagen, duracion, QDate::currentDate(), true);
+        Cancion cancion(0,id, titulo, artista.getNombreArtistico(), g, c, tipoEnum, descripcion,rutaAudio, rutaImagen, duracion, QDate::currentDate(), true);
 
         if(gestor.CancionDuplicada(cancion))
         {

@@ -18,7 +18,7 @@ bool GestorCanciones::guardarCancion(const Cancion &c)
 
     }
     QDataStream out(&file);
-    out<<c.getId()<<c.getTitulo()<<c.getNombreArtista()<< generoToString(c.getGenero())<<categoriaToString(c.getCategoria())<<tipoToString( c.getTipo()) <<c.getDescripcion()<<c.getRutaAudio()<<c.getRutaImagen()<<c.getDuracion()<<c.getFechaCarga()<<c.estaActiva();
+    out<<c.getReproducciones()<<c.getId()<<c.getTitulo()<<c.getNombreArtista()<< generoToString(c.getGenero())<<categoriaToString(c.getCategoria())<<tipoToString( c.getTipo()) <<c.getDescripcion()<<c.getRutaAudio()<<c.getRutaImagen()<<c.getDuracion()<<c.getFechaCarga()<<c.estaActiva();
 
     file.close();
     return true;
@@ -36,19 +36,19 @@ QVector<Cancion>GestorCanciones::leerCanciones()
    while(!in.atEnd())
    {
 
-       int id;
+       int id,reproducciones;
        QString titulo,NombreArtista,descripcion,rutaAudio,rutaImagen,duracion;
        QDate fecha;
        bool Activo;
 
        QString generoStr,categoriaStr,tipoStr;
-       in>>id>>titulo>>NombreArtista>>generoStr>>categoriaStr>>tipoStr>>descripcion>>rutaAudio>>rutaImagen>>duracion>>fecha>>Activo;
+       in>>reproducciones>>id>>titulo>>NombreArtista>>generoStr>>categoriaStr>>tipoStr>>descripcion>>rutaAudio>>rutaImagen>>duracion>>fecha>>Activo;
 
        Genero genero=stringToGenero(generoStr);
        Categoria categoria=stringToCategoria(categoriaStr);
        Tipo tipo=stringToTipo(tipoStr);
 
-       Cancion c(id,titulo,NombreArtista,genero,categoria,tipo,descripcion,rutaAudio,rutaImagen,duracion,fecha,Activo);
+       Cancion c(reproducciones,id,titulo,NombreArtista,genero,categoria,tipo,descripcion,rutaAudio,rutaImagen,duracion,fecha,Activo);
        canciones.append(c);
 
    }
