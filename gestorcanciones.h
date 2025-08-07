@@ -19,6 +19,7 @@ public:
     QVector<Cancion> leerCanciones();
     int generarId();  // Generador de ID incremental
     bool CancionDuplicada(const Cancion& NuevaCancion);
+    bool eliminarCancionPorTitulo(const QString& titulo);
 
 };
 

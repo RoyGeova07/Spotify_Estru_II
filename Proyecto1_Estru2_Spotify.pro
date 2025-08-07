@@ -11,6 +11,7 @@ CONFIG += c++17
 SOURCES += \
     artista.cpp \
     cancion.cpp \
+    controlreproduccion.cpp \
     gestorartistas.cpp \
     gestorcanciones.cpp \
     gestorusuarios.cpp \
@@ -23,6 +24,7 @@ SOURCES += \
     registroartista.cpp \
     registrousuario.cpp \
     reproductormusica.cpp \
+    sliderclickable.cpp \
     tipos.cpp \
     usuario.cpp \
     vistapreviaimagen.cpp
@@ -30,6 +32,7 @@ SOURCES += \
 HEADERS += \
     artista.h \
     cancion.h \
+    controlreproduccion.h \
     gestorartistas.h \
     gestorcanciones.h \
     gestorusuarios.h \
@@ -41,6 +44,7 @@ HEADERS += \
     registroartista.h \
     registrousuario.h \
     reproductormusica.h \
+    sliderclickable.h \
     tipos.h \
     usuario.h \
     vistapreviaimagen.h

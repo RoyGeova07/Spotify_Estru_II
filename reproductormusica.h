@@ -10,9 +10,10 @@
 #include<QVBoxLayout>
 #include<QHBoxLayout>
 #include"cancion.h"
-//#include"controlreproduccion.h"
 #include"usuario.h"
 #include"home.h"
+#include"controlreproduccion.h"
+#include"sliderclickable.h"
 
 class ReproductorMusica:public QWidget
 {
@@ -24,16 +25,13 @@ public:
 
 private slots:
 
-    // void reproducirCancion(int index);
-    // void playPause();
-    // void siguiente();
-    // void anterior();
     void actualizarPosicion(qint64 position);
     void actualizarDuracion(qint64 duration);
-    // void cambiarPosicion(int position);
-    // void toggleRepetir();
-    // void toggleAleatorio();
     void cerrarReproductor();
+
+protected:
+
+    void closeEvent(QCloseEvent *event)override;
 
 private:
 
@@ -43,7 +41,6 @@ private:
     QLabel* lblReproducciones;
     QVector<Cancion> listaCanciones;
     Usuario usuarioActivo;
-    QMediaPlayer* reproductor;
     QListWidget* listaWidget;
     QPushButton* btnPlayPause;
     QPushButton* btnRepetir;
@@ -52,13 +49,14 @@ private:
     QPushButton* btnAnterior;
     QPushButton* btnGuardarPlaylist;
     QPushButton* btnCerrar;
-    QSlider* barraProgreso;
+    SliderClickable*barraProgreso;
     QLabel* lblTiempoActual;
     QLabel* lblDuracionTotal;
     QLabel* lblCaratula;
     QLabel* lblUsuario;
     int indiceActual;
-    //ControlReproduccion control;
+
+    ControlReproduccion*control;
 
     void cargarCancionesEnLista();
     void actualizarEstadoBotones();

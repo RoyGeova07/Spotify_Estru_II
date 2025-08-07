@@ -96,3 +96,41 @@ bool GestorCanciones::CancionDuplicada(const Cancion &NuevaCancion)
     return false;
 
 }
+
+//Los enum como Genero, Categoria y Tipo se deben guardar como int usando static_cast<int>
+bool GestorCanciones::eliminarCancionPorTitulo(const QString &titulo)
+{
+
+
+    QVector<Cancion>canciones=leerCanciones();
+    bool eliminado=false;
+
+    for(int i=0;i<canciones.size();i++)
+    {
+
+        if(canciones[i].getTitulo().trimmed().toLower()==titulo.trimmed().toLower())
+        {
+
+            canciones.removeAt(i);
+            eliminado=true;
+            break;
+
+        }
+
+    }
+    if(!eliminado)return false;
+
+    QFile file("canciones.dat");
+    if(!file.open(QIODevice::WriteOnly))return false;
+
+    QDataStream out(&file);
+    for(const Cancion&c:canciones)
+    {
+
+        out<<c.getReproducciones()<<c.getId()<<c.getTitulo()<< c.getNombreArtista()<< static_cast<int>(c.getGenero())<< static_cast<int>(c.getCategoria())<< static_cast<int>(c.getTipo())<<c.getDescripcion()<<c.getRutaAudio()<<c.getRutaImagen()<<c.getDuracion()<<c.getFechaCarga()<<c.estaActiva();
+
+    }
+    file.close();
+    return true;
+
+}

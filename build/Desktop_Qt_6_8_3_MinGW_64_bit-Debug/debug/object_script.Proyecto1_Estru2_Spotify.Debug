@@ -1,5 +1,6 @@
 debug/artista.o
 debug/cancion.o
+debug/controlreproduccion.o
 debug/gestorartistas.o
 debug/gestorcanciones.o
 debug/gestorusuarios.o
@@ -12,11 +13,13 @@ debug/menuinicio.o
 debug/registroartista.o
 debug/registrousuario.o
 debug/reproductormusica.o
+debug/sliderclickable.o
 debug/tipos.o
 debug/usuario.o
 debug/vistapreviaimagen.o
 debug/qrc_assets.o
 debug/qrc_qmake_qmake_qm_files.o
+debug/moc_controlreproduccion.o
 debug/moc_home.o
 debug/moc_login.o
 debug/moc_mainwindow.o

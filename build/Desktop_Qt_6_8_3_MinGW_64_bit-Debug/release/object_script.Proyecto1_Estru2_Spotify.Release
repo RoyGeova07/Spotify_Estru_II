@@ -1,5 +1,6 @@
 release/artista.o
 release/cancion.o
+release/controlreproduccion.o
 release/gestorartistas.o
 release/gestorcanciones.o
 release/gestorusuarios.o
@@ -12,11 +13,13 @@ release/menuinicio.o
 release/registroartista.o
 release/registrousuario.o
 release/reproductormusica.o
+release/sliderclickable.o
 release/tipos.o
 release/usuario.o
 release/vistapreviaimagen.o
 release/qrc_assets.o
 release/qrc_qmake_qmake_qm_files.o
+release/moc_controlreproduccion.o
 release/moc_home.o
 release/moc_login.o
 release/moc_mainwindow.o
