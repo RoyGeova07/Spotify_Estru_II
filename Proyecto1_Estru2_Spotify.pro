@@ -21,6 +21,7 @@ SOURCES += \
     mainwindow.cpp \
     menuadmin.cpp \
     menuinicio.cpp \
+    perfilusuario.cpp \
     registroartista.cpp \
     registrousuario.cpp \
     reproductormusica.cpp \
@@ -41,6 +42,7 @@ HEADERS += \
     mainwindow.h \
     menuadmin.h \
     menuinicio.h \
+    perfilusuario.h \
     registroartista.h \
     registrousuario.h \
     reproductormusica.h \

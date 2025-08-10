@@ -34,6 +34,7 @@ ReproductorMusica::ReproductorMusica(const QVector<Cancion>& canciones, const Us
         lblArtista->setText(c.getNombreArtista());
         lblTipo->setText(tipoToString(c.getTipo()));
         lblReproducciones->setText(QString::number(c.getReproducciones()) + " Reproducciones");
+        lblDescripcion->setText("Descripcion:"+c.getDescripcion());
 
         if (QFile::exists(c.getRutaImagen())) {
             lblCaratula->setPixmap(QPixmap(c.getRutaImagen()).scaled(250,250,Qt::KeepAspectRatio,Qt::SmoothTransformation));
@@ -169,10 +170,16 @@ void ReproductorMusica::configurarInterfaz()
     lblReproducciones=new QLabel("0 Reproduciones");
     lblReproducciones->setStyleSheet("font-size: 16px; color: #b3b3b3;");
 
+    lblDescripcion=new QLabel("Descripcion:");
+    lblDescripcion->setStyleSheet("font-size: 14px; color: #b3b3b3;");
+    lblDescripcion->setWordWrap(true);
+    lblDescripcion->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+
     textoLayout->addWidget(lblTipo);
     textoLayout->addWidget(lblTitulo);
     textoLayout->addWidget(lblArtista);
     textoLayout->addWidget(lblReproducciones);
+    textoLayout->addWidget(lblDescripcion);
     textoLayout->addStretch();
 
     infoLayout->addLayout(textoLayout);
@@ -373,6 +380,7 @@ void ReproductorMusica::configurarInterfaz()
                 lblTipo->setText(tipoToString(c.getTipo()));
                 lblTitulo->setText(c.getTitulo());
                 lblArtista->setText(c.getNombreArtista());
+                lblDescripcion->setText("Descripcion:"+c.getDescripcion());
 
                 //VALIDACION SI TIENE CARATULA VALIDA
                 if(QFile::exists(c.getRutaImagen()))

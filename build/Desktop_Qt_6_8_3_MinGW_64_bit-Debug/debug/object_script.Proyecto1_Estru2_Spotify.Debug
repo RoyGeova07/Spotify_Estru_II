@@ -10,6 +10,7 @@ debug/main.o
 debug/mainwindow.o
 debug/menuadmin.o
 debug/menuinicio.o
+debug/perfilusuario.o
 debug/registroartista.o
 debug/registrousuario.o
 debug/reproductormusica.o
@@ -25,6 +26,7 @@ debug/moc_login.o
 debug/moc_mainwindow.o
 debug/moc_menuadmin.o
 debug/moc_menuinicio.o
+debug/moc_perfilusuario.o
 debug/moc_registroartista.o
 debug/moc_registrousuario.o
 debug/moc_reproductormusica.o

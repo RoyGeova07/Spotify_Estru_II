@@ -22,6 +22,11 @@ public:
     bool GuardarArtista(const Artista &a);
     QVector<Artista>leerArtista();
 
+    bool existeNombreArtistico(const QString& nombre,int excluirId=-1);
+
+    //Reemplaza al artista por ID con los nuevos datos
+    bool actualizarArtista(const Artista& nuevo);
+
 };
 
 #endif // GESTORARTISTAS_H

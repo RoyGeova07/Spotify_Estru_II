@@ -54,6 +54,7 @@ private:
     QLabel* lblDuracionTotal;
     QLabel* lblCaratula;
     QLabel* lblUsuario;
+    QLabel*lblDescripcion;
     int indiceActual;
 
     ControlReproduccion*control;

@@ -31,3 +31,9 @@ void Cancion::incrementarReproducciones()
 }
 
 void Cancion::desactivar(){activo =false;}
+
+void Cancion::setTitulo(const QString &t){titulo=t;}
+void Cancion::setCategoria(Categoria c){categoria=c;}
+void Cancion::setDescripcion(const QString &d){descripcion=d;}
+void Cancion::setGenero(Genero g){genero=g;}
+void Cancion::setCaratula(const QString &cara){rutaImagen=cara;}

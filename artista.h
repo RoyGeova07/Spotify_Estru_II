@@ -40,6 +40,11 @@ public:
 
     void desactivar();
 
+    void setNombreArtistico(const QString& n);
+    void setPais(const QString& p);
+    void setGenero(const QString& g);
+    void setRutaImagen(const QString& r);
+
 };
 
 #endif // ARTISTA_H

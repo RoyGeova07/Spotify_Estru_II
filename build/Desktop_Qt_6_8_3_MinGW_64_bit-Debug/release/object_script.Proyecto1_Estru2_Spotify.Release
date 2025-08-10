@@ -10,6 +10,7 @@ release/main.o
 release/mainwindow.o
 release/menuadmin.o
 release/menuinicio.o
+release/perfilusuario.o
 release/registroartista.o
 release/registrousuario.o
 release/reproductormusica.o
@@ -25,6 +26,7 @@ release/moc_login.o
 release/moc_mainwindow.o
 release/moc_menuadmin.o
 release/moc_menuinicio.o
+release/moc_perfilusuario.o
 release/moc_registroartista.o
 release/moc_registrousuario.o
 release/moc_reproductormusica.o

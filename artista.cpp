@@ -19,3 +19,9 @@ bool Artista::estaActivo()const{return activo;}
 void Artista::desactivar(){activo=false;}
 
 QDate Artista::getFechaNacimiento()const{return fechaNacimiento;}
+
+
+void Artista::setNombreArtistico(const QString& n){nombreArtistico=n;}
+void Artista::setPais(const QString& p){pais=p;}
+void Artista::setGenero(const QString& g){generoMusical=g;}
+void Artista::setRutaImagen(const QString& r){rutaImagen=r;}

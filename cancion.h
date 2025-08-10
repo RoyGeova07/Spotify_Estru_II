@@ -49,6 +49,13 @@ public:
     // Logica
     void desactivar();
 
+    //SETTERS
+    void setTitulo(const QString&t);
+    void setDescripcion(const QString&d);
+    void setCategoria(Categoria c);
+    void setGenero(Genero g);
+    void setCaratula(const QString&cara);
+
 
 };
 

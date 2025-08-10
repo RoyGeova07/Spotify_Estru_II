@@ -13,6 +13,8 @@
 #include"gestorcanciones.h"
 #include<QScrollArea>
 #include"cancion.h"
+#include<QInputDialog>
+#include"gestorartistas.h"
 
 MenuAdmin::MenuAdmin(const Artista& artistaActivo, QWidget *parent):QWidget(parent), artista(artistaActivo)
 {
@@ -84,12 +86,13 @@ void MenuAdmin::configurarUI()
     btnMiMusica=new QPushButton("🎧  Mi Música");
     btnVerEstadisticas=new QPushButton("📊  Ver Estadísticas");
     btnSalir=new QPushButton("🔙  Cerrar Sesión");
+    btnPerfil=new QPushButton("🎤 Mi perfil");
 
     QVector<QPushButton*>botones=
     {
 
         btnSubirCancion,
-        btnMiMusica, btnVerEstadisticas, btnSalir
+        btnMiMusica, btnVerEstadisticas, btnPerfil,btnSalir
 
     };
 
@@ -143,6 +146,8 @@ void MenuAdmin::configurarUI()
     connect(btnSubirCancion, &QPushButton::clicked, this, &MenuAdmin::abrirVentanaSubirCancion);
     connect(btnMiMusica,&QPushButton::clicked,this,&MenuAdmin::MostrarPanelMiMusica);
     connect(btnSalir, &QPushButton::clicked, this, &MenuAdmin::CerrarSesion);
+    connect(btnPerfil,&QPushButton::clicked,this,&MenuAdmin::MostrarPerfil);
+
 }
 
 void MenuAdmin::estiloBoton(QPushButton* boton, const QString& color)
@@ -172,6 +177,7 @@ void MenuAdmin::abrirVentanaSubirCancion()
 
     //Limpiar todo el contenido actual del panel derecho
     LimpiarPanelDerecho();
+    ApagarReproductor();
 
     QHBoxLayout*layoutSuperior =new QHBoxLayout;
     layoutSuperior->addStretch();
@@ -213,6 +219,7 @@ void MenuAdmin::abrirVentanaSubirCancion()
 void MenuAdmin::CerrarSesion()
 {
 
+    ApagarReproductor();
     MenuInicio*m=new MenuInicio(nullptr);
     m->show();
     this->close();
@@ -641,16 +648,26 @@ void MenuAdmin::MostrarPanelMiMusica()
     QVBoxLayout*layoutInfo=new QVBoxLayout;
     lblTitulo =new QLabel("Título");
     lblTitulo->setStyleSheet("color: white; font-size: 18px;");
+
     lblArtista= new QLabel("Artista");
     lblArtista->setStyleSheet("color: gray; font-size: 14px;");
+
     lblTipo = new QLabel("Tipo");
     lblTipo->setStyleSheet("color: gray;");
+
     lblReproducciones = new QLabel("Reproducciones: 0");
     lblReproducciones->setStyleSheet("color: gray;");
+
+    lblDescripcion=new QLabel("Descripcion:");
+    lblDescripcion->setStyleSheet("color: gray;");
+    lblDescripcion->setWordWrap(true);
+    lblDescripcion->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+
     layoutInfo->addWidget(lblTitulo);
     layoutInfo->addWidget(lblArtista);
     layoutInfo->addWidget(lblTipo);
     layoutInfo->addWidget(lblReproducciones);
+    layoutInfo->addWidget(lblDescripcion);
 
     layoutTop->addLayout(layoutInfo);
     layout->addLayout(layoutTop);
@@ -738,6 +755,7 @@ void MenuAdmin::MostrarPanelMiMusica()
             lblTipo->setText(tipoToString(c.getTipo()));
             lblReproducciones->setText("Reproducciones: " + QString::number(c.getReproducciones()));
             lblDuracionTotal->setText(c.getDuracion().isEmpty() ? "00:00" : c.getDuracion());
+            lblDescripcion->setText("Descripcion:"+c.getDescripcion());
 
             if (QFile::exists(c.getRutaImagen()))
             {
@@ -843,7 +861,245 @@ void MenuAdmin::MostrarPanelMiMusica()
     });
 
     //BOTON DE ELIMINAR CUENTA
-    //DESPUES LO HAGO
+    connect(btnEliminarCancionReproductor,&QPushButton::clicked,this,[=](){
+
+        if(listaCanciones.isEmpty())
+        {
+
+            QMessageBox::information(this,"Eliminar","No hay canciones para eliminar.");
+            return;
+
+        }
+
+        bool ok=false;
+        QString titulo=QInputDialog::getText(this,"Eliminar Cancion","Escribe el titulo EXACTO de la cancion a eliminar:",QLineEdit::Normal,"",&ok).trimmed();
+
+        if(!ok||titulo.isEmpty())return;
+
+        //SE CONFIRMA
+        if(QMessageBox::question(this,"Confirmar",QString("¿Eliminar \"%1\"? Esta accion no se puede deshacer.").arg(titulo),QMessageBox::Yes|QMessageBox::No)!=QMessageBox::Yes)
+        {
+
+            return;
+
+        }
+
+        //ELIMINAR EL ARCHIVO
+        GestorCanciones gestor;
+        bool exito=gestor.eliminarCancionPorTituloYArtista(titulo,artista.getNombreArtistico());
+
+        if(!exito)
+        {
+
+            QMessageBox::warning(this,"eliminar","No se encontro ese titulo en tus canciones");
+            return;
+
+        }
+
+        //QUITAR DE LA MEMORIA
+        int idBorrar=-1;
+        for(int i=0;i<listaCanciones.size();++i)
+        {
+
+            if(listaCanciones[i].getTitulo().compare(titulo,Qt::CaseInsensitive)==0)
+            {
+
+                idBorrar=i;break;
+
+            }
+
+        }
+        if(idBorrar!=-1)
+        {
+
+            //SI SE ESTABA REPRODUCIENDO ESA, SE DETIENE Y SE LIMPIA LOS LABELS
+            if(listaWidget->currentRow()==idBorrar)
+            {
+
+                controlAdmin->detener();
+                lblTitulo->setText("Título");
+                lblArtista->setText("Artista");
+                lblTipo->setText("Tipo");
+                lblReproducciones->setText("Reproducciones: 0");
+                lblDuracionTotal->setText("00:00");
+                lblCaratula->setPixmap(QPixmap(":/imagenes/default_caratula.jpg").scaled(200,200,Qt::KeepAspectRatio,Qt::SmoothTransformation));
+
+            }
+            listaCanciones.removeAt(idBorrar);
+            delete listaWidget->takeItem(idBorrar);
+
+            //Re-sincronizar el control con la nueva lista
+            controlAdmin->setListaCanciones(listaCanciones);
+
+            //Selecciona algo valido
+            if(!listaCanciones.isEmpty())
+            {
+
+                int nuevo=qBound(0,idBorrar,listaCanciones.size()-1);
+                listaWidget->setCurrentRow(nuevo);
+                // Opcional empezar a reproducir automaticamente
+                // controlAdmin->reproducir(nuevo);
+
+            }
+
+            QMessageBox::information(this, "Eliminar", "Canción eliminada correctamente.");
+
+        }
+
+    });
+
+    //BOTON DE EDITAR CANCION
+    connect(btnEditarCancionReproductor,&QPushButton::clicked,this,[=](){
+
+        int idx=listaWidget->currentRow();
+        if(idx<0||idx>listaCanciones.size())
+        {
+
+            QMessageBox::information(this,"Editar","Selecciona una cancion primero.");
+            return;
+
+        }
+
+        Cancion c=listaCanciones[idx];
+
+        //DIALOGO DE EDICION
+        QDialog dlg(this);
+        dlg.setWindowTitle("Editar Cancion");
+        QVBoxLayout*v=new QVBoxLayout(&dlg);
+
+        QLabel*l1=new QLabel("Título:");
+        QLineEdit*eTitulo=new QLineEdit(c.getTitulo());
+        v->addWidget(l1); v->addWidget(eTitulo);
+
+        QLabel*l2=new QLabel("Descripcion:");
+        QTextEdit*eDesc=new QTextEdit(c.getDescripcion());
+        eDesc->setMinimumHeight(70);
+        v->addWidget(l2);v->addWidget(eDesc);
+
+        QLabel*l3=new QLabel("Genero:");
+        QComboBox*cbGenero=new QComboBox;
+        cbGenero->addItems({"Pop","Corridos","Cristianos","Electronica","Regueton","Rock","Clasicas"});
+        cbGenero->setCurrentText(generoToString(c.getGenero()));
+        v->addWidget(l3); v->addWidget(cbGenero);
+
+        QLabel*l4=new QLabel("Categoria:");
+        QComboBox*cbCat=new QComboBox;
+        cbCat->addItems({"playlist","recomendado","favorito","infantil","instrumental"});
+        cbCat->setCurrentText(categoriaToString(c.getCategoria()));
+        v->addWidget(l4); v->addWidget(cbCat);
+
+        QLabel*l5=new QLabel("Carátula:");
+        QHBoxLayout*hbCar = new QHBoxLayout;
+        QLineEdit* eCaratula = new QLineEdit(c.getRutaImagen());
+        eCaratula->setReadOnly(true);
+        QPushButton* btnElegirCar = new QPushButton("Cambiar...");
+        hbCar->addWidget(eCaratula,1);
+        hbCar->addWidget(btnElegirCar);
+        v->addWidget(l5); v->addLayout(hbCar);
+
+        QLabel* prev = new QLabel;
+        prev->setFixedSize(140, 140);
+        prev->setStyleSheet("border:1px solid #444;");
+        prev->setAlignment(Qt::AlignCenter);
+        prev->setPixmap(QPixmap(QFile::exists(c.getRutaImagen()) ? c.getRutaImagen() : ":/imagenes/default_caratula.jpg").scaled(prev->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
+        v->addWidget(prev, 0, Qt::AlignLeft);
+
+        QObject::connect(btnElegirCar,&QPushButton::clicked,&dlg,[&](){
+
+            QString ruta=QFileDialog::getOpenFileName(&dlg,"Seleccionar carátula","","Imágenes (*.jpg *.jpeg *.png)");
+
+            if(ruta.isEmpty())return;
+            eCaratula->setText(ruta);
+            prev->setPixmap(QPixmap(ruta).scaled(prev->size(),Qt::KeepAspectRatio,Qt::SmoothTransformation));
+
+        });
+
+        QHBoxLayout*hb=new QHBoxLayout;
+        QPushButton*btnOk=new QPushButton("Guardar");
+        QPushButton*btnCancel=new QPushButton("Cancelar");
+        hb->addStretch();hb->addWidget(btnOk);hb->addWidget(btnCancel);
+        v->addLayout(hb);
+
+        QObject::connect(btnCancel, &QPushButton::clicked,&dlg,&QDialog::reject);
+
+        QObject::connect(btnOk,&QPushButton::clicked,[&](){
+
+            //VALIDACIONES IMPORTANTES
+            QString nuevoTitulo=eTitulo->text().trimmed();
+            QString nuevaDesc=eDesc->toPlainText().trimmed();
+            QString nuevaCar=eCaratula->text().trimmed();
+
+            if(nuevoTitulo.isEmpty())
+            {
+
+                QMessageBox::warning(&dlg,"Validacion","El titulo no puede estar vacio.");
+                return;
+
+            }
+            if(nuevaCar.isEmpty()||!QFile::exists(nuevaCar))
+            {
+
+                QMessageBox::warning(&dlg, "Validacion", "Selecciona una caratula válida.");
+                return;
+
+            }
+
+            //EVITAR DUPLICADO DEL TITULO Y LA CARATULA
+            GestorCanciones gestor;
+            if(gestor.existeTituloORutaImagen(nuevoTitulo,nuevaCar,c.getId()))
+            {
+
+                QMessageBox::warning(&dlg, "Duplicado","Ya existe una cancion en el sistema con ese TITULO o esa CARATULA.");
+                return;
+
+            }
+
+            //AQUI SE APLICAN CAMBIOS AL OBJETO
+            c.setTitulo(nuevoTitulo);
+            c.setDescripcion(nuevaDesc);
+            c.setGenero(stringToGenero(cbGenero->currentText()));
+            c.setCategoria(stringToCategoria(cbCat->currentText()));
+            c.setCaratula(nuevaCar);
+
+            // Persistir
+            if(!gestor.ActualizarCancionPorId(c))
+            {
+
+                QMessageBox::critical(&dlg, "Error", "No se pudo guardar los cambios.");
+                return;
+
+            }
+
+            //Refrescar en memoria y UI
+            listaCanciones[idx]=c;
+            //SE ACTULIZA TEXTO VISIBLE EN LA LISTA
+            if(QListWidgetItem*it=listaWidget->item(idx))
+            {
+
+                it->setText(c.getTitulo());
+
+            }
+
+            // Actualiza labels del panel
+            lblTitulo->setText(c.getTitulo());
+            lblTipo->setText(tipoToString(c.getTipo()));
+            lblArtista->setText(c.getNombreArtista());
+            lblDescripcion->setText("Descripcion: "+c.getDescripcion());
+            if(QFile::exists(c.getRutaImagen()))
+            {
+
+                lblCaratula->setPixmap(QPixmap(c.getRutaImagen()).scaled(200,200,Qt::KeepAspectRatio,Qt::SmoothTransformation));
+
+            }
+
+
+            QMessageBox::information(&dlg, "Editar", "Cambios guardados.");
+            dlg.accept();
+
+        });
+
+        dlg.exec();
+    });
 
 }
 
@@ -885,6 +1141,7 @@ void MenuAdmin::actualizarDuracion(qint64 duracion)
 
 }
 
+//AL SELECCIONAR UNA MUSICA LOS DATOS SE CAMBIAN GRACIAS A ESTA FUNCION
 void MenuAdmin::mostrarDatosCancionActual(int index)
 {
 
@@ -898,6 +1155,7 @@ void MenuAdmin::mostrarDatosCancionActual(int index)
         lblTipo->setText(tipoToString(c.getTipo()));
         lblReproducciones->setText("Reproducciones: "+QString::number(c.getReproducciones()));
         lblDuracionTotal->setText(c.getDuracion().isEmpty()?"00:00":c.getDuracion());
+        lblDescripcion->setText("Descripcion:"+c.getDescripcion());
 
         if(QFile::exists(c.getRutaImagen()))
         {
@@ -914,3 +1172,144 @@ void MenuAdmin::mostrarDatosCancionActual(int index)
     }
 
 }
+
+//LIBERAR MEMORIA DEL REPRODUCTOR DEL ARTISTA
+void MenuAdmin::ApagarReproductor()
+{
+
+    //DETIENE EL AUDIO Y DESCONECTA LAS SEÑALES
+    if(controlAdmin)
+    {
+
+        if(auto rep=controlAdmin->getReproductor())
+        {
+
+            rep->stop();
+            QObject::disconnect(rep,nullptr,this,nullptr);
+
+        }
+
+    }
+    LimpiarPanelDerecho();
+
+    // Limpiar lista en memoria y widget
+    if (listaWidget) listaWidget->clear();
+    listaCanciones.clear();
+
+    // Liberar objetos (QPointer vuelve a nullptr automaticamente)
+    if(controlAdmin){controlAdmin->deleteLater();controlAdmin=nullptr;}
+    if(panelReproductorAdmin){panelReproductorAdmin->deleteLater();panelReproductorAdmin=nullptr;}
+
+    //reset de labels (por si quedaba algo visible)
+    if(lblTitulo) lblTitulo->setText("Título");
+    if(lblArtista) lblArtista->setText("Artista");
+    if(lblTipo) lblTipo->setText("Tipo");
+    if(lblReproducciones) lblReproducciones->setText("Reproducciones: 0");
+    if(lblDescripcion) lblDescripcion->setText("");
+    if(lblDuracionTotal) lblDuracionTotal->setText("00:00");
+    if(lblCaratula) lblCaratula->setPixmap(QPixmap(":/imagenes/default_caratula.jpg").scaled(200,200,Qt::KeepAspectRatio,Qt::SmoothTransformation));
+
+}
+
+void MenuAdmin::MostrarPerfil()
+{
+
+    ApagarReproductor();
+
+    //Contenedor principal del perfil
+    QWidget*perfil=new QWidget;
+    QVBoxLayout*root=new QVBoxLayout(perfil);
+    root->setContentsMargins(24,24,24,24);
+    root->setSpacing(18);
+
+    //AQUI EL TITULO Y EL ENCABEZADO
+    QLabel*header=new QLabel("Mi Perfil de Artista");
+    header->setStyleSheet("color:white;font-size:22px;font-weight:700;");
+    root->addWidget(header);
+
+    //AQUI SECCION SUPERIOR: FOTO CIRCULAR Y NOMBRE
+    QHBoxLayout*top=new QHBoxLayout;
+    top->setSpacing(20);
+
+    //AQUI SE DEFINE LA FOTO CIRCULAR
+    QLabel*foto=new QLabel;
+    foto->setFixedSize(140,140);
+    foto->setStyleSheet("border-radius:70px; border:3px solid #1DB954; background:#222;");
+
+    QPixmap px(artista.getRutaImagen());
+    if(!px.isNull())
+    {
+
+        int lado=qMin(px.width(),px.height());
+        QRect centro((px.width()-lado)/2,(px.height()-lado)/2,lado,lado);
+        QPixmap cuadrado=px.copy(centro).scaled(foto->size(),Qt::IgnoreAspectRatio,Qt::SmoothTransformation);
+
+        QPixmap circular(foto->size());
+        circular.fill(Qt::transparent);
+        QPainter p(&circular);
+        p.setRenderHint(QPainter::Antialiasing);
+        QPainterPath path; path.addEllipse(0,0,foto->width(),foto->height());
+        p.setClipPath(path);
+        p.drawPixmap(0,0,cuadrado);
+        p.end();
+        foto->setPixmap(circular);
+
+    }
+    top->addWidget(foto,0,Qt::AlignTop);
+
+    //Nombre y datos clave (lado derecho)
+    QVBoxLayout*rightTop=new QVBoxLayout;
+    QLabel*lblNombreArt=new QLabel(artista.getNombreArtistico());
+    lblNombreArt->setStyleSheet("color:white; font-size:28px; font-weight:800;");
+    rightTop->addWidget(lblNombreArt);
+
+    //Grid con datos breves
+    QGridLayout*grid=new QGridLayout;
+    grid->setHorizontalSpacing(16);
+    grid->setVerticalSpacing(8);
+
+    auto mKLabel=[](const QString&k,const QString&v)
+    {
+
+        QWidget*w=new QWidget;
+        QHBoxLayout*h=new QHBoxLayout(w);
+        h->setContentsMargins(0,0,0,0);
+        QLabel*lk=new QLabel(k+":");
+        lk->setStyleSheet("color:#b3b3b3; font-size:14px;");
+        QLabel*lv=new QLabel(v);
+        lv->setStyleSheet("color:white;font-size:14px");
+        h->addWidget(lk);
+        h->addWidget(lv,1);
+        return w;
+
+    };
+
+    grid->addWidget(mKLabel("ID",QString::number(artista.getId())),0,0);
+    grid->addWidget(mKLabel("Pais",artista.getPais()),0,1);
+    grid->addWidget(mKLabel("Genero Musical",artista.getGenero()),1,0);
+    grid->addWidget(mKLabel("Registro",artista.getFechaRegistro().toString("yyyy-MM-dd")),1,1);
+    grid->addWidget(mKLabel("Nacimiento",artista.getFechaNacimiento().toString("yyyy-MM-dd")),2,0);
+
+    rightTop->addLayout(grid);
+    top->addLayout(rightTop,1);
+
+    root->addLayout(top);
+
+    //Biografia (bloque aparte con scroll por si es larga)
+    QLabel*bioTitle=new QLabel("Biografia");
+    bioTitle->setStyleSheet("color:white; font-size:16px; font-weight:600;");
+    root->addWidget(bioTitle);
+
+    QTextEdit*bio=new QTextEdit;
+    bio->setReadOnly(true);
+    bio->setText(artista.getBiografia());
+    bio->setMinimumHeight(140);
+    bio->setStyleSheet("QTextEdit { background:#1a1a1a; color:#ddd; border:1px solid #333; border-radius:8px; padding:10px; }");
+
+    root->addWidget(bio);
+
+    //SE MONTA EN EL PANEL
+    layoutDerecho->addWidget(perfil);
+
+}
+

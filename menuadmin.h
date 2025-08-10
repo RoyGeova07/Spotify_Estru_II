@@ -38,6 +38,7 @@ private slots:
     void subirCanciones();
     void SeleccionarImagen();
     void mostrarDatosCancionActual(int index);
+    void MostrarPerfil();
 
 private:
 
@@ -50,6 +51,7 @@ private:
     QPushButton*btnVerEstadisticas;
     QPushButton*btnSalir;
     QPushButton*btnMiMusica;
+    QPushButton*btnPerfil;
 
     void configurarUI();
     void estiloBoton(QPushButton* boton, const QString& color);
@@ -98,6 +100,7 @@ private:
     QPointer<QLabel>lblArtista=nullptr;
     QPointer<QLabel>lblTipo=nullptr;
     QPointer<QLabel>lblReproducciones=nullptr;
+    QPointer<QLabel>lblDescripcion=nullptr;
 
     QPointer<SliderClickable>barraProgreso=nullptr;
     QPointer<QLabel>lblTiempoActual= nullptr;
@@ -118,6 +121,8 @@ private:
     QString formatearTiempo(qint64 milisegundos);
     void actualizarTiempo(qint64 posicion);
     void actualizarDuracion(qint64 duracion);
+    void ApagarReproductor();
+    void refrescarSidebarFotoNombre();
 
 
 };

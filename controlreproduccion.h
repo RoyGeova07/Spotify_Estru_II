@@ -14,6 +14,7 @@ class ControlReproduccion:public QObject
 
 public:
     ControlReproduccion(QObject*parent=nullptr);
+    ~ControlReproduccion();//DESTRUCTOR PARA LIBERAR NODOS
 
     void setListaCanciones(const QVector<Cancion>&canciones);
     void reproducir(int indice);
@@ -31,7 +32,6 @@ public:
 
 signals:
 
-    void cancionTerminada();
     void indiceActualizado(int nuevoIndice);
 
 private slots:
@@ -39,15 +39,35 @@ private slots:
     void ManejarFinalCancion();
 
 private:
+    int obtenerSiguienteIndice();
 
-    QVector<Cancion>listaCanciones;
     QMediaPlayer*reproductor;
     QAudioOutput* salidaAudio;
-    int indiceActual;
-    bool aleatorio;
-    bool repetir;
 
-    int obtenerSiguienteIndice();
+    //CONSTRUIR LISTA DOBLEMENTE ENLAZADA PARA EL SIGUIENTE Y ANTERIOR
+    struct Nodo
+    {
+
+        int index;//indice dentro de listaCanciones
+        Nodo* prev;
+        Nodo* next;
+
+    };
+
+    void construirLista();// Reconstruye la lista circular a partir de listaCanciones
+    void limpiarLista();//Libera todos los nodos y resetea punteros/estado
+    void irANodo(Nodo* n);//Cambia el nodo "actual": setea source en QMediaPlayer, da play y emite señal de indice actualizado
+    Nodo*nodoAleatorio() const;
+
+    QVector<Cancion>listaCanciones;
+    QVector<Nodo*>mapaIndices;//Acceso O(1): index -> nodo
+    Nodo*head=nullptr;
+    Nodo*actual=nullptr;
+
+    int  indiceActual=-1;//Indice actual dentro de listaCanciones
+    bool aleatorio=false;
+    bool repetir=false;
+
 
 
 };

@@ -17,7 +17,7 @@ ControlReproduccion::ControlReproduccion(QObject*parent):QObject(parent),reprodu
         if(status==QMediaPlayer::EndOfMedia)
         {
 
-            ManejarFinalCancion();
+            ManejarFinalCancion();//avanza segun reglas (repetir/aleatorio/lista circular)
 
         }
 
@@ -25,50 +25,129 @@ ControlReproduccion::ControlReproduccion(QObject*parent):QObject(parent),reprodu
 
 }
 
+ControlReproduccion::~ControlReproduccion()
+{
+
+    limpiarLista();
+
+}
+
+void ControlReproduccion::limpiarLista()
+{
+
+    //LIBERAR NODOS CIRCULARES
+    for(Nodo*n:mapaIndices)delete n;
+    mapaIndices.clear();
+    head=nullptr;
+    actual=nullptr;
+
+}
+
+//Construye la lista doblemente enlazada circular a partir de listaCanciones
+void ControlReproduccion::construirLista()
+{
+
+    limpiarLista();// primero limpia cualquier lista anterior
+
+    const int n=listaCanciones.size();
+
+    if(n==0){indiceActual=-1;return;}//nada que construir si no hay canciones
+
+    mapaIndices.resize(n,nullptr);//reserva vector de punteros
+
+    //SE CREAN LOS NODOS
+    Nodo*prev=nullptr;
+    for(int i=0;i<n;i++)
+    {
+
+        Nodo*node=new Nodo{i,nullptr,nullptr};
+        mapaIndices[i]=node;//acceso directo index -> nodo
+
+        if(!head)head=node;//si es el primero, head = node
+        if(prev)
+        {
+            //encadenar doblemente
+            prev->next=node;
+            node->prev=prev;
+
+        }
+        prev=node;//AVANZAR EL ULTIMO
+
+    }
+
+    //CERRAR EL CIRCULO:  head <-> prev
+    head->prev=prev;
+    prev->next=head;
+
+    //POR DEFECTO APUNTAR AL PRIMERO
+    actual=head;
+    indiceActual=0;
+
+}
+
+//Setter de la lista de canciones. Reconstruye la lista circular.
 void ControlReproduccion::setListaCanciones(const QVector<Cancion> &canciones)
 {
 
     listaCanciones=canciones;
+    construirLista();// crea nodos/relaciones circulares y coloca actual=0
 
 }
 
+
+//Salta a un nodo especifico de la lista circular y reproduce.
+//Ademas emite la señal indiceActualizado para refrescar la UI.
+void ControlReproduccion::irANodo(Nodo *n)
+{
+
+    if(!n)return;
+    actual=n;//mueve el puntero actual
+    indiceActual=n->index;//actualiza indice
+
+    const QString ruta=listaCanciones[indiceActual].getRutaAudio();
+    qDebug()<<"REPRODUCIENDO: "<<ruta<<" Existe?"<<QFile::exists(ruta);
+
+    // Solo cargar si el archivo existe fisicamente
+    if(QFile::exists(ruta))
+    {
+
+        // Cargar la fuente local en el reproductor
+        reproductor->setSource(QUrl::fromLocalFile(ruta));
+        reproductor->play(); // Empezar a reproducir
+        emit indiceActualizado(indiceActual);//Avisar a la interfaz que cambio el indice
+
+    }
+
+}
+
+// Reproduccion por indice.
+// Casos:
+//  - Si el indice es invalido -> return.
+//  - Si es el MISMO indice:
+//        * Si el player NO esta en Playing -> recarga y play (fix del "primer click no suena").
+//        * Si ya esta sonando -> no hacemos nada.
+//  - Si es diferente -> saltar al nodo correspondiente y reproducir.
 void ControlReproduccion::reproducir(int indice)
 {
 
     if(indice<0||indice>=listaCanciones.size())return;//Verifica que el indice sea valido.
 
-    QString ruta=listaCanciones[indice].getRutaAudio();
-
-    //SI YA ESTA EN ESE INDICE, SIMPLEMENTE SE REANUDA SI ESTA EN PAUSA
-    if(indice==indiceActual&&reproductor->playbackState()==QMediaPlayer::PausedState)
+    //SI YA ESTAMOS EN EL INDICE
+    if(actual&&indice==indiceActual)
     {
 
-       reproductor->play();
+        //pero NO estA sonando (Paused o Stopped), aseguramos cargar y reproducir
+        if(reproductor->playbackState()!=QMediaPlayer::PlayingState)
+        {
+
+            irANodo(actual);
+
+        }
+        return;//si ya estaba sonando, no hacemos nada
 
     }
-
-    //SI YA SE ESTA REPRODUCIENDO ESA MISMA CANCION, NO SE HACE NADA
-    if(indice==indiceActual&&reproductor->playbackState()==QMediaPlayer::PlayingState)
-    {
-
-        return;
-
-    }
-
-    indiceActual=indice;
-
-    //DEBUGUEARRRRRRR
-    qDebug()<<"Reproduciendo: "<<ruta;
-    qDebug()<<"Existe archivo? "<<QFile::exists(ruta);
-
-    if(QFile::exists(ruta))
-    {
-
-        reproductor->setSource(QUrl::fromLocalFile(ruta));
-        reproductor->play();//AQUI COMIENZA LA REPRODUCCION
-        emit indiceActualizado(indiceActual);//INFORMA A LA INTERFAZ
-
-    }
+    if(mapaIndices.isEmpty())construirLista();
+    irANodo(mapaIndices[indice]); // setSource + play + emite indiceActualizado
 
 }
 
@@ -87,19 +166,37 @@ void ControlReproduccion::reiniciar()
 
 }
 
+//Devuelve un nodo aleatorio de la lista (para modo aleatorio)
+ControlReproduccion::Nodo* ControlReproduccion::nodoAleatorio()const
+{
+
+    if(mapaIndices.isEmpty())return nullptr;
+    int idx=QRandomGenerator::global()->bounded(mapaIndices.size());
+    return mapaIndices[idx];
+
+}
+
+// Avanza a la siguiente pista.
+// Reglas:
+//   - repetir ON   -> vuelve a cargar la misma pista actual
+//   - aleatorio ON -> elige un nodo aleatorio
+//   - normal       -> actual->next (siempre valido por ser circular)
 void ControlReproduccion::siguiente()
 {
 
-    int siguienteIndice=obtenerSiguienteIndice();
-    reproducir(siguienteIndice);
+    if(!actual)return;
+    if(repetir){irANodo(actual);return;}
+    if(aleatorio){irANodo(nodoAleatorio());return;}
+    irANodo(actual->next);//circular: nunca se sale de rango
 
 }
 
 void ControlReproduccion::anterior()
 {
-
-    int nuevoIndice=(indiceActual-1+listaCanciones.size())%listaCanciones.size();
-    reproducir(nuevoIndice);
+    if(!actual)return;
+    if(repetir){irANodo(actual);return;}
+    if(aleatorio){irANodo(nodoAleatorio());return;}
+    irANodo(actual->prev);//CIRCULARRR
 
 }
 
@@ -117,17 +214,6 @@ void ControlReproduccion::activarRepetir(bool activar)
 
 }
 
-int ControlReproduccion::obtenerSiguienteIndice()
-{
-
-    if(repetir)return indiceActual;
-
-    if(aleatorio)
-        return QRandomGenerator::global()->bounded(listaCanciones.size());
-
-    return (indiceActual+1)%listaCanciones.size();
-
-}
 
 void ControlReproduccion::ManejarFinalCancion()
 {
@@ -143,6 +229,7 @@ int ControlReproduccion::getIndiceActual()const
 
 }
 
+// Devuelve el puntero al QMediaPlayer (para conectar señales/consultar estado desde la UI)
 QMediaPlayer*ControlReproduccion::getReproductor()const
 {
 
@@ -153,12 +240,13 @@ QMediaPlayer*ControlReproduccion::getReproductor()const
 void ControlReproduccion::play()
 {
 
-    //SI YA SE ESTA REPRODUCIENDO NO SE HACE NADA
-    if(reproductor->playbackState()==QMediaPlayer::PlayingState)
-        return;
+    if(reproductor->playbackState()!=QMediaPlayer::PlayingState)
+    {
 
-    //SI ESTA PAUSADO O DETENIDO, SE REANUDA
-    reproductor->play();
+        reproductor->play();
+
+    }
+
 
 }
 

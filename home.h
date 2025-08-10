@@ -1,7 +1,7 @@
 #ifndef HOME_H
 #define HOME_H
 
-#include <QDialog>
+#include<QWidget>
 #include"usuario.h"
 #include"artista.h"
 #include"reproductormusica.h"
@@ -23,6 +23,6 @@ private:
     //ReproductorMusica*ventanaReproductor=nullptr;
     Usuario usuario;
 
-};
 
+};
 #endif // HOME_H

@@ -114,3 +114,59 @@ bool GestorArtistas::validarLogIn(const QString &nombreReal, const QString &cont
     return false;
 
 }
+
+bool GestorArtistas::existeNombreArtistico(const QString &nombre, int excluirId)
+{
+
+    QVector<Artista>arts=leerArtista();
+    QString n=nombre.trimmed().toLower();
+    for(const Artista&a:arts)
+    {
+
+        if(excluirId!=-1&&a.getId()==excluirId)continue;
+        if(a.getNombreArtistico().trimmed().toLower()==n)return true;
+
+    }
+    return false;
+
+}
+
+bool GestorArtistas::actualizarArtista(const Artista &nuevo)
+{
+
+    QVector<Artista>arts=leerArtista();
+
+    //Unicidad de nombre artistico (excepto el mismo)
+    if(existeNombreArtistico(nuevo.getNombreArtistico(),nuevo.getId()))
+        return false;
+
+    bool bandera=false;
+    for(Artista&a:arts)
+    {
+
+        if(a.getId()==nuevo.getId())
+        {
+
+            a=nuevo;//REEMPLAZA EL OBJETO COMPLETO
+            bandera=true;
+            break;
+
+        }
+
+    }
+    if(!bandera)return false;
+
+    QFile f(Archivo);
+    if(!f.open(QIODevice::WriteOnly))return false;
+    QDataStream out(&f);
+
+    for(const Artista&a:arts)
+    {
+
+        out<<a.getId()<<a.getNombreArtistico()<<a.getNombreReal()<<a.getPais()<<a.getGenero()<<a.getBiografia()<<a.getContrasena()<<a.getFechaRegistro()<<a.getRutaImagen()<<a.estaActivo()<<a.getFechaNacimiento();
+
+    }
+    f.close();
+    return true;
+
+}

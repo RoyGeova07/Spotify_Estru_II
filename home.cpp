@@ -17,6 +17,7 @@
 #include<QStackedLayout>
 #include"cancion.h"
 #include"gestorcanciones.h"
+#include"perfilusuario.h"
 
 Home::Home(const Usuario& usuarioActivo, QWidget *parent): QWidget(parent), usuario(usuarioActivo)
 {
@@ -92,16 +93,16 @@ Home::Home(const Usuario& usuarioActivo, QWidget *parent): QWidget(parent), usua
 
     barraSuperior->addSpacerItem(new QSpacerItem(20, 20, QSizePolicy::Expanding));
 
-    QLabel*lblImagen=new QLabel();
-    lblImagen->setFixedSize(40,40);
-    lblImagen->setStyleSheet(
+    QPushButton*bntImagen=new QPushButton();
+    bntImagen->setFixedSize(50,50);
+    bntImagen->setStyleSheet(
 
         "border-radius: 20px;"
         "border: 2px solid white;"
         "background-color: #222;"
 
-        );
-    lblImagen->setCursor(Qt::PointingHandCursor);
+    );
+    bntImagen->setCursor(Qt::PointingHandCursor);
 
     //Aqui imagen circular personalizada
     QPixmap pix(usuario.getRutaFoto());
@@ -111,27 +112,28 @@ Home::Home(const Usuario& usuarioActivo, QWidget *parent): QWidget(parent), usua
         int lado=qMin(pix.width(),pix.height());
         QRect centro((pix.width()-lado)/2,(pix.height()-lado)/2,lado,lado);
         QPixmap cuadrado =pix.copy(centro);
-        QPixmap escalado= cuadrado.scaled(lblImagen->size(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+        QPixmap escalado= cuadrado.scaled(bntImagen->size(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
 
-        QPixmap circular(lblImagen->size());
+        QPixmap circular(bntImagen->size());
         circular.fill(Qt::transparent);
 
         QPainter painter(&circular);
         painter.setRenderHint(QPainter::Antialiasing);
         QPainterPath path;
-        path.addEllipse(0, 0, lblImagen->width(), lblImagen->height());
+        path.addEllipse(0,0,bntImagen->width(), bntImagen->height());
         painter.setClipPath(path);
-        painter.drawPixmap(0, 0, escalado);
+        painter.drawPixmap(0,0,escalado);
         painter.end();
 
-        lblImagen->setPixmap(circular);
+        bntImagen->setIcon(circular);
+        bntImagen->setIconSize(bntImagen->size());
 
         //EFECTO SOMBRAAAAAAA VERDECITOUUUUU
         QGraphicsDropShadowEffect*sombra=new QGraphicsDropShadowEffect(this);
         sombra->setBlurRadius(15);
         sombra->setOffset(0,0);
         sombra->setColor(QColor("#1DB954"));
-        lblImagen->setGraphicsEffect(sombra);
+        bntImagen->setGraphicsEffect(sombra);
 
     }
 
@@ -150,6 +152,15 @@ Home::Home(const Usuario& usuarioActivo, QWidget *parent): QWidget(parent), usua
             background-color: #3e3e3e;
         }
     )");
+
+    connect(bntImagen,&QPushButton::clicked,this,[=](){
+
+        auto p=new PerfilUsuario(usuarioActivo,nullptr);
+        p->show();
+        this->hide();
+
+    });
+
     connect(btnVolver, &QPushButton::clicked, this, &Home::Regresar);
     barraSuperior->addSpacing(20);
     barraSuperior->addWidget(btnVolver);
@@ -157,12 +168,12 @@ Home::Home(const Usuario& usuarioActivo, QWidget *parent): QWidget(parent), usua
 
     QMenu *menuPerfil = new QMenu();
     menuPerfil->addAction("Perfil");
-    lblImagen->setContextMenuPolicy(Qt::CustomContextMenu);
-    connect(lblImagen, &QLabel::customContextMenuRequested, [=](const QPoint &pos) {
-        menuPerfil->exec(lblImagen->mapToGlobal(pos));
+    bntImagen->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(bntImagen, &QLabel::customContextMenuRequested, [=](const QPoint &pos) {
+        menuPerfil->exec(bntImagen->mapToGlobal(pos));
     });
 
-    barraSuperior->addWidget(lblImagen);
+    barraSuperior->addWidget(bntImagen);
     colContenido->addLayout(barraSuperior);
 
     // ---------- AREA DE SCROLL ----------

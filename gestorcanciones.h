@@ -20,6 +20,9 @@ public:
     int generarId();  // Generador de ID incremental
     bool CancionDuplicada(const Cancion& NuevaCancion);
     bool eliminarCancionPorTitulo(const QString& titulo);
+    bool eliminarCancionPorTituloYArtista(const QString& titulo,const QString& artista);
+    bool ActualizarCancionPorId(const Cancion&nueva);
+    bool existeTituloORutaImagen(const QString& titulo,const QString&rutaImagen,int excluirId=-1);
 
 };
 
