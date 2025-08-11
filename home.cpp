@@ -18,6 +18,7 @@
 #include"cancion.h"
 #include"gestorcanciones.h"
 #include"perfilusuario.h"
+#include<QMessageBox>
 
 Home::Home(const Usuario& usuarioActivo, QWidget *parent): QWidget(parent), usuario(usuarioActivo)
 {
@@ -641,6 +642,78 @@ Home::Home(const Usuario& usuarioActivo, QWidget *parent): QWidget(parent), usua
         layoutScroll->addWidget(contenedorScrollYFade);
 
     }
+
+    // ==================== SECCION: Genero ====================
+    QLabel*lblGenero=new QLabel("Género");
+    lblGenero->setStyleSheet("font-size: 22px; font-weight: bold;");
+    layoutScroll->addWidget(lblGenero);
+
+    // Contenedor y grid
+    QWidget*generoWrap=new QWidget();
+    QGridLayout*gridGenero=new QGridLayout(generoWrap);
+    gridGenero->setSpacing(18);
+    gridGenero->setContentsMargins(0,6,0,6);
+
+    struct GenItem{QString nombre;QString color; Genero g;};
+    const QVector<GenItem>generos=
+    {
+
+        {"Pop","#2ebd59",Genero::Pop},
+        {"Corridos","#e91e63",Genero::Corridos},
+        {"Cristianos","#3f51b5",Genero::Cristianos},
+        {"Reguetón","#9c27b0",Genero::Regueton},     // enum es Regueton
+        {"Electrónica","#009688",Genero::Electronica},  // enum es Electronica
+        {"Rock","#ff5722", Genero::Rock},
+        {"Clásicas","#607d8b",Genero::Clasicas}
+
+    };
+
+    // Crea cada “tarjeta” de genero
+    auto crearTileGenero = [&](const GenItem& gi)->QPushButton*
+    {
+
+        QPushButton* tile = new QPushButton(gi.nombre);
+        tile->setCursor(Qt::PointingHandCursor);
+        tile->setMinimumSize(320, 150);
+        tile->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+        tile->setStyleSheet(QString(
+                                "QPushButton {"
+                                "  background-color: %1;"
+                                "  color: white;"
+                                "  border: none;"
+                                "  border-radius: 14px;"
+                                "  font-weight: 800;"
+                                "  font-size: 20px;"
+                                "  text-align: left;"
+                                "  padding: 14px 16px;"
+                                "}"
+                                "QPushButton:hover {"
+                                "  background-color: %2;"
+                                "}"
+                                ).arg(gi.color, QColor(gi.color).lighter(110).name()));
+        // Click -> abrir reproductor con canciones de ese genero
+        connect(tile,&QPushButton::clicked,this,[=]()
+        {
+
+            AbrirPorGenero(gi.g);
+
+        });
+        return tile;
+
+    };
+
+    // Distribucion en una grilla 3xN (7 elementos total)
+    for(int i = 0; i < generos.size(); ++i)
+    {
+
+        int r = i / 3;           // 3 columnas
+        int c = i % 3;
+        gridGenero->addWidget(crearTileGenero(generos[i]), r, c);
+
+    }
+
+    layoutScroll->addWidget(generoWrap);
+
     contenidoScroll->setLayout(layoutScroll);
     scroll->setWidget(contenidoScroll);
 
@@ -659,5 +732,38 @@ void Home::Regresar()
     MenuInicio*m=new MenuInicio(nullptr);
     m->show();
     this->close();
+
+}
+
+void Home::AbrirPorGenero(Genero g)
+{
+
+    GestorCanciones gestor;
+    const QVector<Cancion>todas=gestor.leerCanciones();
+
+    QVector<Cancion>filtradas;
+    filtradas.reserve(todas.size());
+    for(const Cancion&c:todas)
+    {
+
+        if(c.estaActiva()&&c.getGenero()==g)
+        {
+
+            filtradas.append(c);
+
+        }
+
+    }
+    if(filtradas.isEmpty())
+    {
+
+        QMessageBox::information(this,"Genero","No hay canciones para este genero todavia.");
+        return;
+
+    }
+    auto*rep=new ReproductorMusica(filtradas,usuario,nullptr);
+    rep->show();
+    this->hide();
+
 
 }

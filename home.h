@@ -17,6 +17,7 @@ public:
 private slots:
 
     void Regresar();
+    void AbrirPorGenero(Genero g);
 
 private:
 
