@@ -15,6 +15,8 @@
 #include"cancion.h"
 #include<QInputDialog>
 #include"gestorartistas.h"
+#include<QTableWidget>
+#include<QProgressBar>
 
 MenuAdmin::MenuAdmin(const Artista& artistaActivo, QWidget *parent):QWidget(parent), artista(artistaActivo)
 {
@@ -147,6 +149,7 @@ void MenuAdmin::configurarUI()
     connect(btnMiMusica,&QPushButton::clicked,this,&MenuAdmin::MostrarPanelMiMusica);
     connect(btnSalir, &QPushButton::clicked, this, &MenuAdmin::CerrarSesion);
     connect(btnPerfil,&QPushButton::clicked,this,&MenuAdmin::MostrarPerfil);
+    connect(btnVerEstadisticas,&QPushButton::clicked,this,&MenuAdmin::MostrarEstadisticas);
 
 }
 
@@ -1310,6 +1313,239 @@ void MenuAdmin::MostrarPerfil()
 
     //SE MONTA EN EL PANEL
     layoutDerecho->addWidget(perfil);
+
+}
+
+QWidget* MenuAdmin::crearTarjetaSeccion(const QString &titulo, QWidget *contenido)
+{
+
+    auto*card=new QFrame;
+    card->setStyleSheet(
+        "QFrame{background-color:#1a1a1a;border:1px solid #333;border-radius:12px;}"
+        "QLabel[role='title']{color:white;font-size:18px;font-weight:700;}"
+        );
+
+    //Titulo ARRIBA, contenido ABAJO
+    auto* v = new QVBoxLayout(card);
+    v->setContentsMargins(16,16,16,16);
+    v->setSpacing(10);
+
+    auto*lbl=new QLabel(titulo);
+    lbl->setProperty("role","title");
+
+    //El contenido se expande horizontalmente y mantiene altura fija (la pone tablaDummy)
+    contenido->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+
+    v->addWidget(lbl, /*stretch*/ 0, Qt::AlignLeft);
+    v->addWidget(contenido, /*stretch*/ 1);
+
+    return card;
+
+}
+
+QWidget*MenuAdmin::tablaDummy(const QStringList &cabeceras, int filas,bool conRanking)
+{
+
+    // 1) Armar cabeceras con la columna "#" al inicio si se pide ranking
+    QStringList headers=cabeceras;
+    if(conRanking)
+    {
+
+        if(headers.isEmpty()||headers.first()!="#")
+            headers.insert(0,"#");
+
+    }
+
+    // 2) Crear tabla con mismo look&feel que PerfilUsuario::crearTabla
+    auto*tabla=new QTableWidget(filas, headers.size());
+
+    // Cabeceras
+    tabla->setHorizontalHeaderLabels(headers);
+    tabla->horizontalHeader()->setStretchLastSection(true);
+    tabla->horizontalHeader()->setDefaultAlignment(Qt::AlignLeft);
+    tabla->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+
+    // Apariencia / UX
+    tabla->verticalHeader()->setVisible(false);
+    tabla->setShowGrid(false);
+    tabla->setSelectionMode(QAbstractItemView::NoSelection);
+    tabla->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    tabla->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+
+    // Alturas controladas
+    const int rowH=36;
+    tabla->verticalHeader()->setDefaultSectionSize(rowH);
+    const int headerH=34;// usa un valor fijo (mas estable que pedir height() antes de show)
+    const int wanted=headerH+filas*rowH+24;// margen inferior
+    const int minH=qMin(wanted,420);//no crecer mas de ~420px
+    tabla->setMinimumHeight(minH);
+    tabla->setMaximumHeight(minH);
+
+    // Estilos calcados
+    tabla->setStyleSheet(
+        "QHeaderView::section{background:#222;color:#ddd;border:none;padding:8px;font-weight:600;}"
+        "QTableWidget{background:#111;color:#ddd;border:1px solid #333;}"
+        "QTableWidget::item{padding:8px;font-size:14px;}"
+        );
+
+    // 3) Llenado dummy: si hay ranking, primera columna son números centrados
+    for(int r=0;r<filas;++r)
+    {
+
+        int c0=0;
+
+        if(conRanking)
+        {
+
+            auto* posItem=new QTableWidgetItem(QString::number(r+1));
+            posItem->setTextAlignment(Qt::AlignCenter);
+            posItem->setFlags(Qt::ItemIsEnabled);
+            tabla->setItem(r, c0++, posItem);
+
+        }
+
+        for(int c=c0;c<headers.size(); ++c)
+        {
+
+            auto*it=new QTableWidgetItem(QStringLiteral("—"));
+            // Columna de texto principal a la izquierda; el resto centrado
+            it->setTextAlignment(Qt::AlignVCenter|(c==c0?Qt::AlignLeft : Qt::AlignCenter));
+            it->setFlags(Qt::ItemIsEnabled);
+            tabla->setItem(r, c, it);
+
+        }
+    }
+
+    // Ancho fijo para la columna "#", como en el perfil
+    if(conRanking)
+    {
+
+        tabla->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Fixed);
+        tabla->setColumnWidth(0,42);
+        for(int c =1; c<headers.size(); ++c)
+            tabla->horizontalHeader()->setSectionResizeMode(c, QHeaderView::Stretch);
+
+    }
+
+    return tabla;
+}
+void MenuAdmin::MostrarEstadisticas()
+{
+
+    ApagarReproductor();
+    LimpiarPanelDerecho();
+
+    // Contenedor con scroll
+    auto *scroll = new QScrollArea;
+    scroll->setWidgetResizable(true);
+    scroll->setStyleSheet("QScrollArea{border:none;}");
+
+    auto *wrap = new QWidget;
+    auto *root = new QVBoxLayout(wrap);
+    root->setContentsMargins(22,22,22,22);
+    root->setSpacing(18);
+
+    auto *titulo = new QLabel("Estadísticas");
+    titulo->setStyleSheet("color:white;font-size:24px;font-weight:800;");
+    root->addWidget(titulo);
+
+    //SECCION CANCIONES MEJORES CALIFICADAS (promedio)
+    auto *tblTop10 = tablaDummy({"#", "Título", "Artista", "Reproducciones"}, 10, true);
+    root->addWidget(crearTarjetaSeccion("Top 10 canciones más escuchadas", tblTop10));
+
+    // Canciones mejor calificadas (sin #)
+    auto *tblMejorCal = tablaDummy({"Título", "Artista", "★ Promedio", "Votos"}, 8, false);
+    root->addWidget(crearTarjetaSeccion("Canciones mejor calificadas (promedio)", tblMejorCal));
+
+    // Usuarios más activos (con #)
+    auto *tblUsuariosAct = tablaDummy({"#", "Usuario", "Reproducciones"}, 8, true);
+    root->addWidget(crearTarjetaSeccion("Usuarios más activos por cantidad de reproducciones", tblUsuariosAct));
+
+    // ====== Seccion: Distribucion de calificaciones por cancion ======
+    // Placeholder con 4 tarjetas pequeñas tipo “mini-histograma” usando QProgressBar
+    auto *gridDist = new QWidget;
+    auto *grid = new QGridLayout(gridDist);
+    grid->setSpacing(12);
+    grid->setContentsMargins(0,0,0,0);
+
+
+    auto crearMiniHist = [](const QString& tituloCancion){
+        auto *box = new QFrame;
+        box->setStyleSheet("QFrame{background:#111;border:1px solid #333;border-radius:10px;}");
+        auto *v = new QVBoxLayout(box);
+        v->setContentsMargins(12,12,12,12);
+        v->setSpacing(8);
+
+        auto *t = new QLabel(tituloCancion);
+        t->setStyleSheet("color:#eee;font-weight:700;");
+        v->addWidget(t);
+
+        for(int i=1;i<=5;++i)
+        {
+
+            auto *fila = new QWidget; auto *h = new QHBoxLayout(fila);
+            h->setContentsMargins(0,0,0,0); h->setSpacing(8);
+            auto *lbl = new QLabel(QString::number(i) + "★");
+            lbl->setStyleSheet("color:#bbb;");
+            auto *bar = new QProgressBar;
+            bar->setRange(0,100); bar->setValue(20*i); // dummy
+            bar->setTextVisible(false);
+            bar->setStyleSheet(
+                "QProgressBar{background:#1c1c1c;border:1px solid #333;border-radius:6px;height:10px;}"
+                "QProgressBar::chunk{background:#1DB954;border-radius:6px;}"
+                );
+            h->addWidget(lbl);
+            h->addWidget(bar,1);
+            v->addWidget(fila);
+
+        }
+        return box;
+    };
+
+    for (int i=0;i<4;++i) grid->addWidget(crearMiniHist(QString("Canción %1").arg(i+1)), i/2, i%2);
+    root->addWidget(crearTarjetaSeccion("Distribución de calificaciones por canción", gridDist));
+
+    // ====== Sección: Tiempos promedio de uso (día/semana) ======
+    auto *boxTiempo = new QFrame;
+    boxTiempo->setStyleSheet("QFrame{background:#111;border:1px solid #333;border-radius:10px;}");
+    auto *vTiempo = new QVBoxLayout(boxTiempo);
+    vTiempo->setContentsMargins(12,12,12,12);
+    vTiempo->setSpacing(10);
+
+    QStringList dias={"Lun","Mar","Mié","Jue","Vie","Sáb","Dom"};
+    for(int i=0;i<dias.size();++i)
+    {
+
+        auto *fila=new QWidget; auto *h = new QHBoxLayout(fila);
+        h->setContentsMargins(0,0,0,0); h->setSpacing(8);
+        auto*lbl=new QLabel(dias[i]); lbl->setStyleSheet("color:#bbb;width:34px;");
+        auto*bar=new QProgressBar; bar->setRange(0,100); bar->setValue(10+i*10); // dummy
+        bar->setTextVisible(false);
+        bar->setStyleSheet(
+            "QProgressBar{background:#1c1c1c;border:1px solid #333;border-radius:6px;height:12px;}"
+            "QProgressBar::chunk{background:#4caf50;border-radius:6px;}"
+            );
+        h->addWidget(lbl);
+        h->addWidget(bar,1);
+        vTiempo->addWidget(fila);
+
+    }
+
+    root->addWidget(crearTarjetaSeccion("Tiempos promedio de uso del sistema (por día)", boxTiempo));
+
+    // Promedio por genero (sin #)
+    auto *tblTopGenero = tablaDummy({"Género", "★ Promedio"}, 7, false);
+    root->addWidget(crearTarjetaSeccion("Promedio general de calificación por género", tblTopGenero));
+
+    // Usuarios que han calificado mas (con #)
+    auto *tblCalificanMas = tablaDummy({"#", "Usuario", "Canciones calificadas"}, 8, true);
+    root->addWidget(crearTarjetaSeccion("Usuarios que han calificado más canciones", tblCalificanMas));
+
+    root->addStretch();
+    scroll->setWidget(wrap);
+
+    // Montar en el panel derecho
+    layoutDerecho->addWidget(scroll);
 
 }
 

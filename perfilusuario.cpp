@@ -2,12 +2,11 @@
 #include <QPixmap>
 #include"home.h"
 
-
 PerfilUsuario::PerfilUsuario(const Usuario&u,QWidget*parent):QWidget(parent),usuario(u)
 {
 
     setWindowTitle("Perfil de Usuario");
-    setFixedSize(700, 520);
+    setFixedSize(900, 700);
     setStyleSheet("background-color:#121212; color:white;");
 
     auto root=new QVBoxLayout(this);
@@ -70,13 +69,164 @@ PerfilUsuario::PerfilUsuario(const Usuario&u,QWidget*parent):QWidget(parent),usu
 
     root->addLayout(top);
 
+
+    // =================================================================
+    //                       MIS ESTADISTICAS (FRONT)
+    // =================================================================
+    auto tituloStats = new QLabel("Mis estadísticas");
+    tituloStats->setStyleSheet("font-size:22px; font-weight:700; margin-top:10px;");
+    root->addWidget(tituloStats);
+
+    //AREA CON SCROLL VERTICAL
+    auto scroll=new QScrollArea;
+    scroll->setWidgetResizable(true);
+    scroll->setStyleSheet("QScrollArea{border:none;}");
+
+    auto cont=new QWidget;
+    auto lay=new QVBoxLayout(cont);
+    lay->setContentsMargins(0,6,0,6);
+    lay->setSpacing(16);
+
+    // ---- Tarjetas de resumen (placeholders) ----
+    auto gridCards=new QGridLayout;
+    gridCards->setHorizontalSpacing(16);
+    gridCards->setVerticalSpacing(16);
+
+    gridCards->addWidget(crearTarjeta("Canciones escuchadas", "0", "Total histórico"), 0,0);
+    gridCards->addWidget(crearTarjeta("Tiempo de reproducción", "00:00:00", "hh:mm:ss"), 0,1);
+    gridCards->addWidget(crearTarjeta("Promedio de calificaciones", "0.0", "De 1 a 5"), 0,2);
+
+    lay->addLayout(gridCards);
+
+    // ---- Canciones mas escuchadas (tabla demo) ----
+    {
+
+        auto lbl = new QLabel("Tus canciones más escuchadas");
+        lbl->setStyleSheet("font-size:18px; font-weight:600;");
+        lay->addWidget(lbl);
+
+        auto tablaTop = crearTabla({"Título", "Artista", "Reproducciones"}, 5);
+        lay->addWidget(tablaTop);
+
+    }
+
+    // ---- Ultimas canciones calificadas (tabla demo) ----
+    {
+
+        auto lbl=new QLabel("Ultimas canciones calificadas");
+        lbl->setStyleSheet("font-size:18px; font-weight:600;");
+        lay->addWidget(lbl);
+
+        auto tablaCal=crearTabla({"Título", "Artista", "Calificación", "Fecha"}, 5);
+        lay->addWidget(tablaCal);
+
+    }
+
+    //OPCIONAL
+    auto sep=new QFrame; sep->setFrameShape(QFrame::HLine); sep->setStyleSheet("color:#333;");
+    lay->addWidget(sep);
+
+    lay->addSpacing(8);
+
+    scroll->setWidget(cont);
+    root->addWidget(scroll,1);
+
     //Cerrar
     auto btnCerrar=new QPushButton("Cerrar");
     btnCerrar->setStyleSheet("QPushButton{background:#282828;color:white;border:1px solid #444;border-radius:8px;padding:6px 12px;} QPushButton:hover{background:#333;}");
     root->addStretch();
     root->addWidget(btnCerrar,0,Qt::AlignRight);
+
     connect(btnCerrar,&QPushButton::clicked,this,&PerfilUsuario::VolverHome);
 
+}
+
+QWidget* PerfilUsuario::crearTarjeta(const QString &titulo, const QString &valor, const QString &nota)
+{
+
+    auto card=new QWidget;
+    card->setStyleSheet(
+        "QWidget{background:#1a1a1a; border:1px solid #333; border-radius:12px;}"
+        );
+    auto v=new QVBoxLayout(card);
+    v->setContentsMargins(14,12,14,12);
+    v->setSpacing(6);
+
+    auto lt=new QLabel(titulo);
+    lt->setStyleSheet("color:#bdbdbd; font-size:13px;");
+
+    auto lv=new QLabel(valor);
+    lv->setStyleSheet("color:white; font-size:28px; font-weight:800;");
+
+    v->addWidget(lt);
+    v->addWidget(lv);
+
+    if(!nota.isEmpty())
+    {
+
+        auto ln=new QLabel(nota);
+        ln->setStyleSheet("color:#9e9e9e; font-size:12px;");
+        v->addWidget(ln);
+
+    }
+    return card;
+
+}
+QTableWidget* PerfilUsuario::crearTabla(const QStringList &cabeceras, int filasDemo)
+{
+    // Insertamos una columna extra al inicio para la posicion
+    QStringList cabecerasConPos = cabeceras;
+    cabecerasConPos.insert(0, "#"); // Columna de posicion
+
+    auto tabla = new QTableWidget(filasDemo, cabecerasConPos.size());
+
+    // Cabeceras
+    tabla->setHorizontalHeaderLabels(cabecerasConPos);
+    tabla->horizontalHeader()->setStretchLastSection(true);
+    tabla->horizontalHeader()->setDefaultAlignment(Qt::AlignLeft);
+    tabla->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+
+    // Apariencia / UX
+    tabla->verticalHeader()->setVisible(false);
+    tabla->setShowGrid(false);
+    tabla->setSelectionMode(QAbstractItemView::NoSelection);
+    tabla->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    tabla->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+
+    // Altura de filas y altura total de la tabla
+    const int rowH = 36;
+    tabla->verticalHeader()->setDefaultSectionSize(rowH);
+    const int headerH = tabla->horizontalHeader()->height();
+    const int minH = headerH + filasDemo * rowH + 24;
+    tabla->setMinimumHeight(qMax(260, minH));
+
+    // Estilos
+    tabla->setStyleSheet(
+        "QHeaderView::section{background:#222;color:#ddd;border:none;padding:8px;font-weight:600;}"
+        "QTableWidget{background:#111;color:#ddd;border:1px solid #333;}"
+        "QTableWidget::item{padding:8px;font-size:14px;}"
+        );
+
+    // Llenar filas demo con numeros de posicion y guiones
+    for(int r=0; r< filasDemo; ++r)
+    {
+        // Columna de posicion (1, 2, 3, ...)
+        auto* posItem=new QTableWidgetItem(QString::number(r+1));
+        posItem->setTextAlignment(Qt::AlignCenter);
+        tabla->setItem(r,0,posItem);
+
+        // Resto de columnas con guiones
+        for (int c = 1; c < cabecerasConPos.size(); ++c)
+        {
+
+            auto* it = new QTableWidgetItem("—");
+            it->setTextAlignment(Qt::AlignVCenter | Qt::AlignCenter);
+            tabla->setItem(r,c,it);
+
+        }
+    }
+
+    return tabla;
 }
 
 void PerfilUsuario::cargarFotoCircular(const QString &ruta, const QSize &size)

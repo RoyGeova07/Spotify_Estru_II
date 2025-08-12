@@ -11,6 +11,9 @@
 #include<QPainter>
 #include<QPainterPath>
 #include"usuario.h"
+#include<QTableWidget>
+#include<QScrollArea>
+#include<QHeaderView>
 
 class PerfilUsuario:public QWidget
 {
@@ -23,18 +26,21 @@ public:
 
 private:
     Usuario usuario;
-    QLabel*foto;
-    QLabel*lblNombreUsuario;
-    QLabel*lblNombreReal;
-    QLabel*lblCorreo;
-    QLabel*lblGeneroFav;
-    QLabel*lblFechaReg;
-    QLabel*lblFechaNac;
-    QLabel*lblRol;
-    QLabel*lblEstado;
-    QLabel*lblId;
 
-    void cargarFotoCircular(const QString& ruta, const QSize& size);
+    QLabel*foto=nullptr;
+    QLabel*lblNombreUsuario=nullptr;
+    QLabel*lblNombreReal=nullptr;
+    QLabel*lblCorreo=nullptr;
+    QLabel*lblGeneroFav=nullptr;
+    QLabel*lblFechaReg=nullptr;
+    QLabel*lblFechaNac=nullptr;
+    QLabel*lblRol=nullptr;
+    QLabel*lblEstado=nullptr;
+    QLabel*lblId=nullptr;
+
+    void cargarFotoCircular(const QString& ruta,const QSize& size);
+    QWidget* crearTarjeta(const QString& titulo,const QString& valor,const QString& nota=QString());
+    QTableWidget* crearTabla(const QStringList& cabeceras,int filasDemo=0);
 
     void VolverHome();
 

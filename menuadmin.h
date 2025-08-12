@@ -18,6 +18,7 @@
 #include"controlreproduccion.h"
 #include"sliderclickable.h"
 #include<QPointer>//Esto evita errores de punteros colgantes al eliminar widgets con deleteLater().
+#include<QHeaderView>
 
 class MenuAdmin : public QWidget
 {
@@ -30,7 +31,6 @@ public:
 private slots:
 
     void abrirVentanaSubirCancion();
-    //void abrirMiMusica();
     void CerrarSesion();
 
     void seleccionarAudio();
@@ -39,6 +39,7 @@ private slots:
     void SeleccionarImagen();
     void mostrarDatosCancionActual(int index);
     void MostrarPerfil();
+    void MostrarEstadisticas();
 
 private:
 
@@ -123,6 +124,9 @@ private:
     void actualizarDuracion(qint64 duracion);
     void ApagarReproductor();
     void refrescarSidebarFotoNombre();
+
+    QWidget*crearTarjetaSeccion(const QString&titulo, QWidget*contenido);
+    QWidget*tablaDummy(const QStringList&cabeceras,int filas,bool conRanking=false);
 
 
 };
