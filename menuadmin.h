@@ -102,6 +102,8 @@ private:
     QPointer<QLabel>lblTipo=nullptr;
     QPointer<QLabel>lblReproducciones=nullptr;
     QPointer<QLabel>lblDescripcion=nullptr;
+    QPointer<QLabel>lblGenero=nullptr;
+    QPointer<QLabel>lblFechaCarga=nullptr;
 
     QPointer<SliderClickable>barraProgreso=nullptr;
     QPointer<QLabel>lblTiempoActual= nullptr;

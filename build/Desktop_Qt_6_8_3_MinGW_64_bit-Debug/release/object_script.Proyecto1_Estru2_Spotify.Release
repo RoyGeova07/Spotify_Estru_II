@@ -17,6 +17,7 @@ release/reproductormusica.o
 release/sliderclickable.o
 release/tipos.o
 release/usuario.o
+release/vistaperfilartista.o
 release/vistapreviaimagen.o
 release/qrc_assets.o
 release/qrc_qmake_qmake_qm_files.o
@@ -30,4 +31,5 @@ release/moc_perfilusuario.o
 release/moc_registroartista.o
 release/moc_registrousuario.o
 release/moc_reproductormusica.o
+release/moc_vistaperfilartista.o
 release/moc_vistapreviaimagen.o

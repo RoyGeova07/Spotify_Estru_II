@@ -6,6 +6,9 @@
 #include"artista.h"
 #include"reproductormusica.h"
 
+class QListWidget;
+class QLabel;//PARA COMPILACION MAS RAPIDA
+
 class Home : public QWidget
 {
     Q_OBJECT
@@ -21,9 +24,12 @@ private slots:
 
 private:
 
-    //ReproductorMusica*ventanaReproductor=nullptr;
     Usuario usuario;
+    QListWidget*listaPlaylists=nullptr;
+    QLabel*lblVacio=nullptr;
 
+    void cargarPlaylists();
+    void crearPlaylist();
 
 };
 #endif // HOME_H

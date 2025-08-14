@@ -21,7 +21,7 @@ class ReproductorMusica:public QWidget
 
 public:
 
-    explicit ReproductorMusica(const QVector<Cancion>&canciones, const Usuario& usuarioActivo,QWidget*parent =nullptr);
+    explicit ReproductorMusica(const QVector<Cancion>&canciones, const Usuario& usuarioActivo,QWidget*parent =nullptr,bool modoPlayList=false,const QString&pathPlaylist="");
 
 private slots:
 
@@ -47,7 +47,6 @@ private:
     QPushButton* btnAleatorio;
     QPushButton* btnSiguiente;
     QPushButton* btnAnterior;
-    QPushButton* btnGuardarPlaylist;
     QPushButton* btnCerrar;
     SliderClickable*barraProgreso;
     QLabel* lblTiempoActual;
@@ -55,6 +54,8 @@ private:
     QLabel* lblCaratula;
     QLabel* lblUsuario;
     QLabel*lblDescripcion;
+    QLabel*lblGenero;
+    QLabel*lblFechaCarga;
     int indiceActual;
 
     ControlReproduccion*control;
@@ -63,6 +64,37 @@ private:
     void actualizarEstadoBotones();
     void configurarInterfaz();
     QString formatoTiempo(qint64 milisegundos);
+    void guardarEnPlaylist(int indexCancion);
+    bool cancionYaEnPlaylist(const QString& pathDat,const Cancion& c) const;
+    QString keyCancion(const Cancion& c) const;  //genera clave unica (hash)
+
+    bool esDesdePlaylist=false;
+    QString rutaPlaylistDat;
+
+    void eliminarDePlaylist(int indexFila);
+
+    // Reindexa el "#": 1,2,3... despues de eliminar
+    static void reindexarNumeros(QListWidget* lista)
+    {
+
+        if(!lista)return;
+        for(int i=0;i<lista->count();++i)
+        {
+
+            QListWidgetItem*it=lista->item(i);
+            QWidget* row=lista->itemWidget(it);
+            if(!row)continue;
+            if(QLabel* num=row->findChild<QLabel*>("numLbl"))
+            {
+
+                num->setText(QString::number(i+1));
+
+            }
+
+        }
+
+    }
+
 };
 
 #endif // REPRODUCTORMUSICA_H

@@ -19,6 +19,12 @@
 #include"gestorcanciones.h"
 #include"perfilusuario.h"
 #include<QMessageBox>
+#include<QListWidget>
+#include<QInputDialog>
+#include<QDir>
+#include<QRegularExpression>
+#include<QFileInfo>
+#include"vistaperfilartista.h"
 
 Home::Home(const Usuario& usuarioActivo, QWidget *parent): QWidget(parent), usuario(usuarioActivo)
 {
@@ -63,10 +69,107 @@ Home::Home(const Usuario& usuarioActivo, QWidget *parent): QWidget(parent), usua
 
     colBiblioteca->addLayout(layoutBibliotecaHeader);
 
+    listaPlaylists=new QListWidget();
+    listaPlaylists->setStyleSheet(
+        "QListWidget{ background-color:#121212; color:white; border:none; }"
+        "QListWidget::item{ padding:8px; }"
+        "QListWidget::item:selected{ background:#1DB954; color:black; }"
+        );
+    colBiblioteca->addWidget(listaPlaylists);
+
     //Aqui placeholder de playlists
-    QLabel*lblVacio=new QLabel("No hay playlists aún");
+    lblVacio=new QLabel("No hay playlists aún");
     lblVacio->setStyleSheet("font-style: italic; font-size: 14px; color: gray;");
     colBiblioteca->addWidget(lblVacio);
+
+    connect(btnAgregar,&QPushButton::clicked,this,[=](){
+
+        crearPlaylist();
+
+    });
+
+    cargarPlaylists();
+
+    connect(listaPlaylists, &QListWidget::itemDoubleClicked, this, [=](QListWidgetItem* it)
+    {
+        const QString baseDir="Publico";
+        const QString carpetaUsuario=baseDir+"/Usuario_"+usuario.getNombreUsuario();
+        const QString pathDat=carpetaUsuario+"/"+it->text()+".dat";
+
+        //1. VALIDACIONESSSSZZ
+        QFile f(pathDat);
+        if(!f.exists())
+        {
+
+            QMessageBox::warning(this,"Playlist", "El archivo de la playlist no existe.");
+            return;
+
+        }
+        if(QFileInfo(pathDat).size()==0)//EVITAR CRASH
+        {
+
+            QMessageBox::information(this, "Playlist vacia","Esta playlist no tiene canciones.");
+            return;
+
+        }
+
+        // Leer canciones del .dat
+        QVector<Cancion>cancionesLeidas;
+        if(f.open(QIODevice::ReadOnly))
+        {
+
+            QDataStream in(&f);
+            in.setVersion(QDataStream::Qt_5_15);
+            while (!in.atEnd())
+            {
+
+                quint32 magic; quint16 ver;
+                in>>magic>>ver;
+                if(in.status()!=QDataStream::Ok)break;
+                if(magic!=0x534F4E47||ver!=1) break; // 'SONG', v1
+
+                QString titulo,artista,desc,rutaAudio,rutaImagen,duracionStr;
+                quint16 tipo,genero;
+                QDate fecha;
+                qint32 reproducciones;
+                bool activo;
+
+                in>>titulo;
+                in>>artista;
+                in>>tipo;
+                in>>desc;
+                in>>genero;
+                in>>fecha;
+                in>>duracionStr;
+                in>>rutaAudio;
+                in>>rutaImagen;
+                in>>reproducciones;
+                in>>activo;
+
+                Cancion c;
+                c.setTitulo(titulo);
+                c.setNombreArtista(artista);
+                c.setTipo(static_cast<Tipo>(tipo));
+                c.setDescripcion(desc);
+                c.setGenero(static_cast<Genero>(genero));
+                c.setFechaCarga(fecha);
+                c.setDuracion(duracionStr);   // ya la guardamos como QString
+                c.setRutaAudio(rutaAudio);
+                c.setRutaImagen(rutaImagen);
+                c.setReproducciones(reproducciones);
+                c.setActiva(activo);
+
+                cancionesLeidas.append(c);
+            }
+            f.close();
+        }
+
+        auto*rep=new ReproductorMusica(cancionesLeidas,usuario,nullptr,true,pathDat);
+        rep->show();
+        this->hide();
+
+    });
+
 
     //Panel lateral izquierdo
     QWidget*panelIzquierdo=new QWidget();
@@ -277,7 +380,7 @@ Home::Home(const Usuario& usuarioActivo, QWidget *parent): QWidget(parent), usua
             {
 
                 QVector<Cancion>unicaCancion={c};//SOLO 1 CANCIONNNNZ
-                ReproductorMusica*r=new ReproductorMusica(unicaCancion,usuarioActivo,nullptr);
+                ReproductorMusica*r=new ReproductorMusica(unicaCancion,usuarioActivo,nullptr,false,"");
                 r->show();
                 this->hide();
 
@@ -386,7 +489,7 @@ Home::Home(const Usuario& usuarioActivo, QWidget *parent): QWidget(parent), usua
 
             QObject::connect(btnImagen,&QPushButton::clicked,this,[=](){
 
-                ReproductorMusica*r=new ReproductorMusica(epCanciones,usuarioActivo,nullptr);
+                ReproductorMusica*r=new ReproductorMusica(epCanciones,usuarioActivo,nullptr,false,"");
                 r->show();
                 this->hide();
 
@@ -494,7 +597,7 @@ Home::Home(const Usuario& usuarioActivo, QWidget *parent): QWidget(parent), usua
 
             QObject::connect(btnImagen,&QPushButton::clicked,this,[=](){
 
-                ReproductorMusica*r=new ReproductorMusica(albumCanciones,usuarioActivo,nullptr) ;
+                ReproductorMusica*r=new ReproductorMusica(albumCanciones,usuarioActivo,nullptr,false,"") ;
                 r->show();
                 this->hide();
 
@@ -556,9 +659,15 @@ Home::Home(const Usuario& usuarioActivo, QWidget *parent): QWidget(parent), usua
             QVBoxLayout*col=new QVBoxLayout();
             col->setAlignment(Qt::AlignCenter);
 
-            QLabel*foto=new QLabel();
+            QPushButton*foto=new QPushButton();
+            foto->setObjectName("fotoArtista");
             foto->setFixedSize(120,120);
-            foto->setStyleSheet("border-radius: 60px; background-color: #222;");
+            foto->setFlat(true);//SIN BORDES
+            foto->setCursor(Qt::PointingHandCursor);
+            foto->setStyleSheet(
+                "#fotoArtista { border: none; border-radius: 60px; background-color: #222; }"
+                "#fotoArtista:focus { outline: none; }"
+                );
 
             QPixmap pix(art.getRutaImagen());
             if(!pix.isNull())
@@ -580,16 +689,27 @@ Home::Home(const Usuario& usuarioActivo, QWidget *parent): QWidget(parent), usua
                 painter.drawPixmap(0,0,escalado);
                 painter.end();
 
-                foto->setPixmap(circular);
+                foto->setIcon(QIcon(circular));
+                foto->setIconSize(foto->size());
 
                 //EFECTO SOMBRAAAAAA
-                QGraphicsDropShadowEffect*sombra=new QGraphicsDropShadowEffect();
+                auto*sombra=new QGraphicsDropShadowEffect();
                 sombra->setBlurRadius(20);
                 sombra->setOffset(0,0);
                 sombra->setColor(QColor(0,0,0,160));
                 foto->setGraphicsEffect(sombra);
 
             }
+
+            foto->setToolTip(art.getNombreArtistico());
+            //CONNECT DEL BOTON
+            connect(foto,&QPushButton::clicked,this,[=](){
+
+                auto*v=new VisitaPerfilArtista(art,usuarioActivo,nullptr);
+                v->show();
+                this->hide();
+
+            });
 
             QLabel*nombreLbl=new QLabel(art.getNombreArtistico());
             nombreLbl->setStyleSheet("color: white; font-weight: bold; font-size: 14px;");
@@ -761,9 +881,106 @@ void Home::AbrirPorGenero(Genero g)
         return;
 
     }
-    auto*rep=new ReproductorMusica(filtradas,usuario,nullptr);
+    auto*rep=new ReproductorMusica(filtradas,usuario,nullptr,false,"");
     rep->show();
     this->hide();
+
+}
+
+void Home::cargarPlaylists()
+{
+
+    listaPlaylists->clear();
+
+    const QString baseDir="Publico";
+    const QString carpetaUsuario=baseDir+"/Usuario_"+usuario.getNombreUsuario();
+
+    QDir dir(carpetaUsuario);
+    if(!dir.exists())
+    {
+
+        //SI NO EXISTE AUN, POR AL AZAR DEL DESTINOOOOO, no se muestra nada
+        lblVacio->show();
+        return;
+
+
+    }
+    //LISTAR SOLO ARCHIVOS.DAT, CADA UNA ES UNA PLAYLIST
+    QStringList subDirs=dir.entryList(QStringList()<<"*.dat",QDir::Files,QDir::Name);
+    for(const QString&archivo:subDirs)
+    {
+
+        //Mostrar sin la extension .dat
+        QString nombreSinExtension=QFileInfo(archivo).completeBaseName();
+        listaPlaylists->addItem(nombreSinExtension);
+
+    }
+
+    //MUESTRA/OCULTA PLACEHOLDER
+    lblVacio->setVisible(listaPlaylists->count()==0);
+
+}
+
+
+void Home::crearPlaylist()
+{
+
+    bool ok=false;
+    QString nombre=QInputDialog::getText(this,"Nueva playList","Escribe un nombre:",QLineEdit::Normal,"",&ok).trimmed();
+    if(!ok||nombre.isEmpty())return;
+
+    //SANEA NOMBRE BASICO PARA CARPETAS
+    nombre.replace(QRegularExpression(R"([\/:*?"<>|])"),"_");
+
+    //EVITAR ESPACIOS O PUNTOS AL FINAL
+    while(nombre.endsWith(' ')||nombre.endsWith('.'))
+    {
+
+        nombre.chop(1);
+
+    }
+
+    if(nombre.isEmpty())
+    {
+
+        QMessageBox::warning(this,"PlayList","El nombre no puede quedar vacio.");
+        return;
+
+    }
+    //RUTAS
+    const QString baseDir="Publico";
+    const QString carpetaUsuario=baseDir+"/Usuario_"+usuario.getNombreUsuario();
+    const QString ArchivoPlayList=carpetaUsuario+"/"+nombre+".dat";
+
+    QDir dir;
+
+    //ASEGURAR BASE Y CARPETA DEL USUARIO
+    if(!dir.exists(baseDir))dir.mkpath(baseDir);
+    if(!dir.exists(carpetaUsuario))dir.mkpath(carpetaUsuario);
+
+    //EVITAR DUPLICADOS
+    if(QFile::exists(ArchivoPlayList))
+    {
+
+        QMessageBox::warning(this,"PlayList","Ya existe una playList con ese nombre.");
+        return;
+
+    }
+    //CREAR ARCHIVO BINARIO VACIO DE LA PLAYLIST
+    QFile archivo(ArchivoPlayList);
+    if(!archivo.open(QIODevice::WriteOnly))
+    {
+
+        QMessageBox::critical(this, "PlayList", "No se pudo crear el archivo de la playlist");
+        return;
+
+    }
+    archivo.close();
+
+    //EXITOOOOO, SE REFLEJA EN EL FRONTED
+    listaPlaylists->addItem(nombre);
+    lblVacio->setVisible(false);
+
 
 
 }

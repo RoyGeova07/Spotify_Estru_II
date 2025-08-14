@@ -28,6 +28,7 @@ SOURCES += \
     sliderclickable.cpp \
     tipos.cpp \
     usuario.cpp \
+    vistaperfilartista.cpp \
     vistapreviaimagen.cpp
 
 HEADERS += \
@@ -49,6 +50,7 @@ HEADERS += \
     sliderclickable.h \
     tipos.h \
     usuario.h \
+    vistaperfilartista.h \
     vistapreviaimagen.h
 
 FORMS += \

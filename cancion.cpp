@@ -37,3 +37,32 @@ void Cancion::setCategoria(Categoria c){categoria=c;}
 void Cancion::setDescripcion(const QString &d){descripcion=d;}
 void Cancion::setGenero(Genero g){genero=g;}
 void Cancion::setCaratula(const QString &cara){rutaImagen=cara;}
+
+
+void Cancion::setRutaAudio(const QString &r) {
+    rutaAudio = r;
+}
+
+void Cancion::setRutaImagen(const QString &r) {
+    rutaImagen = r;
+}
+
+void Cancion::setDuracion(const QString &d) {
+    duracion = d;
+}
+
+void Cancion::setFechaCarga(const QDate &f) {
+    fechaCarga = f;
+}
+
+void Cancion::setActiva(bool a) {
+    activo = a;
+}
+
+void Cancion::setNombreArtista(const QString &a) {
+    NombreArtista = a;
+}
+
+void Cancion::setTipo(Tipo t) {
+    tipo = t;
+}

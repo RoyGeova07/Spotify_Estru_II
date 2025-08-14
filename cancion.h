@@ -43,18 +43,25 @@ public:
     QDate getFechaCarga() const;
     bool estaActiva() const;
     int getReproducciones()const;
-    void setReproducciones(int r);
     void incrementarReproducciones();
 
     // Logica
     void desactivar();
 
     //SETTERS
+    void setNombreArtista(const QString&a);
     void setTitulo(const QString&t);
     void setDescripcion(const QString&d);
     void setCategoria(Categoria c);
     void setGenero(Genero g);
+    void setTipo(Tipo t);
     void setCaratula(const QString&cara);
+    void setReproducciones(int r);
+    void setRutaImagen(const QString&r);
+    void setDuracion(const QString &d);
+    void setFechaCarga(const QDate &f);
+    void setActiva(bool a);
+    void setRutaAudio(const QString&r);
 
 
 };

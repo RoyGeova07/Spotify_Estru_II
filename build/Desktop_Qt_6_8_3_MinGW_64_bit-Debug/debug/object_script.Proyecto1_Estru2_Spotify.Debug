@@ -17,6 +17,7 @@ debug/reproductormusica.o
 debug/sliderclickable.o
 debug/tipos.o
 debug/usuario.o
+debug/vistaperfilartista.o
 debug/vistapreviaimagen.o
 debug/qrc_assets.o
 debug/qrc_qmake_qmake_qm_files.o
@@ -30,4 +31,5 @@ debug/moc_perfilusuario.o
 debug/moc_registroartista.o
 debug/moc_registrousuario.o
 debug/moc_reproductormusica.o
+debug/moc_vistaperfilartista.o
 debug/moc_vistapreviaimagen.o

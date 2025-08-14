@@ -114,25 +114,20 @@ bool GestorUsuarios::registrarUsuario(const QString &NombreReal,const QString &n
     if(!dir.exists(baseDir))
     {
 
-        dir.mkdir(baseDir);
+        dir.mkpath(baseDir);
 
     }
 
     QString CarpetaUsuario=baseDir+"/Usuario_"+nombreUsuario;
 
+    //SI NO EXISTE , MKPATH CREA TODOS LOS DIRECTORIOS INTERMEDIOS NECESARIOS
     if(!dir.exists(CarpetaUsuario))
     {
 
-        if(dir.mkdir(CarpetaUsuario))
+        if(!dir.mkpath(CarpetaUsuario))
         {
 
-            dir.mkdir(CarpetaUsuario+"/canciones");
-            dir.mkdir(CarpetaUsuario+"/playlist");
-            dir.mkdir(CarpetaUsuario+"/favoritos");
-
-        }else{
-
-            qWarning()<<"NO SE PUDO CREAR LA CARPETA DE USUARIO";
+            qWarning()<<"No se pudo crear la carpeta del usuario:"<<CarpetaUsuario;
 
         }
 

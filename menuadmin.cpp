@@ -17,6 +17,7 @@
 #include"gestorartistas.h"
 #include<QTableWidget>
 #include<QProgressBar>
+#include"tipos.h"
 
 MenuAdmin::MenuAdmin(const Artista& artistaActivo, QWidget *parent):QWidget(parent), artista(artistaActivo)
 {
@@ -661,16 +662,26 @@ void MenuAdmin::MostrarPanelMiMusica()
     lblReproducciones = new QLabel("Reproducciones: 0");
     lblReproducciones->setStyleSheet("color: gray;");
 
-    lblDescripcion=new QLabel("Descripcion:");
+    lblDescripcion=new QLabel("Descripcion: ");
     lblDescripcion->setStyleSheet("color: gray;");
     lblDescripcion->setWordWrap(true);
     lblDescripcion->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+
+    lblGenero=new QLabel("Genero: ");
+    lblGenero->setStyleSheet("color: gray;");
+    lblGenero->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Preferred);
+
+    lblFechaCarga=new QLabel("Fecha Carga: ");
+    lblFechaCarga->setStyleSheet("color: gray;");
+    lblFechaCarga->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Preferred);
 
     layoutInfo->addWidget(lblTitulo);
     layoutInfo->addWidget(lblArtista);
     layoutInfo->addWidget(lblTipo);
     layoutInfo->addWidget(lblReproducciones);
     layoutInfo->addWidget(lblDescripcion);
+    layoutInfo->addWidget(lblGenero);
+    layoutInfo->addWidget(lblFechaCarga);
 
     layoutTop->addLayout(layoutInfo);
     layout->addLayout(layoutTop);
@@ -695,13 +706,28 @@ void MenuAdmin::MostrarPanelMiMusica()
 
     // ========== Controles ==========
     QHBoxLayout *layoutControles = new QHBoxLayout;
+
     btnAnterior=new QPushButton("⏮️");
+    btnAnterior->setToolTip("Pasar a la musica anterior");
+
     btnPlayPause=new QPushButton("▶️");
+    btnPlayPause->setToolTip("Play Musica");
+
     btnSiguiente= new QPushButton("⏭️");
+    btnSiguiente->setToolTip("Pasar a la musica siguiente");
+
     btnRepetir =new QPushButton("🔁");
+    btnRepetir->setToolTip("Repetir Cancion infinitamente");
+
     btnAleatorio= new QPushButton("🔀");
+    btnAleatorio->setToolTip("Reproduccion Aleatoria");
+
     btnEditarCancionReproductor = new QPushButton("✏️");
+    btnEditarCancionReproductor->setToolTip("Editar Cancion");
+
+
     btnEliminarCancionReproductor = new QPushButton("🗑️");
+    btnEliminarCancionReproductor->setToolTip("Eliminar Cancion");
 
     QList<QPushButton *> botones = {
         btnAnterior, btnPlayPause, btnSiguiente,
@@ -744,38 +770,10 @@ void MenuAdmin::MostrarPanelMiMusica()
     listaCanciones=propias;
     controlAdmin->setListaCanciones(listaCanciones);
 
-    // ========== Cambio de seleccion ==========
-    connect(listaWidget, &QListWidget::currentRowChanged, this, [=](int index)
-    {
-
-        if(index>=0&&index<listaCanciones.size())
-        {
-
-            const Cancion &c=listaCanciones[index];
-
-            lblTitulo->setText(c.getTitulo());
-            lblArtista->setText(c.getNombreArtista());
-            lblTipo->setText(tipoToString(c.getTipo()));
-            lblReproducciones->setText("Reproducciones: " + QString::number(c.getReproducciones()));
-            lblDuracionTotal->setText(c.getDuracion().isEmpty() ? "00:00" : c.getDuracion());
-            lblDescripcion->setText("Descripcion:"+c.getDescripcion());
-
-            if (QFile::exists(c.getRutaImagen()))
-            {
-
-                lblCaratula->setPixmap(QPixmap(c.getRutaImagen()).scaled(200, 200, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-
-            }else{
-
-                lblCaratula->setPixmap(QPixmap(":/imagenes/default_caratula.jpg").scaled(200, 200, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-
-            }
-        }
-    });
-
     //Seleccion inicial
     if (!listaCanciones.isEmpty()) {
         listaWidget->setCurrentRow(0);
+        mostrarDatosCancionActual(0);
     }
 
     //Reproducir al hacer clic
@@ -841,11 +839,22 @@ void MenuAdmin::MostrarPanelMiMusica()
     connect(btnRepetir, &QPushButton::clicked, this, [=]()
     {
 
-        static bool activo=false;
-        activo=!activo;
-        controlAdmin->activarRepetir(activo);
+        static bool repetirActivo=false;
+        static bool aleatorioActivo=false;//compartir estado
+        repetirActivo= !repetirActivo;
 
-        btnRepetir->setStyleSheet(activo ?
+        if(repetirActivo)
+        {
+
+            //DESACTIVAR ALEATORIO
+            aleatorioActivo=false;
+            controlAdmin->activarAleatorio(false);
+            btnAleatorio->setStyleSheet("background-color: #222; color: white; border-radius: 25px;");
+
+        }
+
+        controlAdmin->activarRepetir(repetirActivo);
+        btnRepetir->setStyleSheet(repetirActivo ?
                                       "background-color: #1DB954; color: black; border-radius: 25px;" :
                                       "background-color: #222; color: white; border-radius: 25px;");
 
@@ -854,13 +863,26 @@ void MenuAdmin::MostrarPanelMiMusica()
     //BOTON ALEATORIO
     connect(btnAleatorio, &QPushButton::clicked, this, [=]()
     {
-        static bool activo=false;
-        activo=!activo;
-        controlAdmin->activarAleatorio(activo);
 
-        btnAleatorio->setStyleSheet(activo ?
+        static bool repetirActivo=false;
+        static bool aleatorioActivo=false;
+
+        aleatorioActivo= !aleatorioActivo;
+
+        if(aleatorioActivo)
+        {
+
+            //DESACTIVAR REPETIR
+            repetirActivo=false;
+            controlAdmin->activarRepetir(false);
+            btnRepetir->setStyleSheet("background-color: #222; color: white; border-radius: 25px;");
+
+        }
+        controlAdmin->activarAleatorio(aleatorioActivo);
+        btnAleatorio->setStyleSheet(aleatorioActivo ?
                                         "background-color: #1DB954; color: black; border-radius: 25px;" :
                                         "background-color: #222; color: white; border-radius: 25px;");
+
     });
 
     //BOTON DE ELIMINAR CUENTA
@@ -955,7 +977,7 @@ void MenuAdmin::MostrarPanelMiMusica()
     connect(btnEditarCancionReproductor,&QPushButton::clicked,this,[=](){
 
         int idx=listaWidget->currentRow();
-        if(idx<0||idx>listaCanciones.size())
+        if(idx<0||idx>=listaCanciones.size())
         {
 
             QMessageBox::information(this,"Editar","Selecciona una cancion primero.");
@@ -1159,6 +1181,8 @@ void MenuAdmin::mostrarDatosCancionActual(int index)
         lblReproducciones->setText("Reproducciones: "+QString::number(c.getReproducciones()));
         lblDuracionTotal->setText(c.getDuracion().isEmpty()?"00:00":c.getDuracion());
         lblDescripcion->setText("Descripcion:"+c.getDescripcion());
+        lblGenero->setText("Genero: "+generoToString(c.getGenero()));
+        lblFechaCarga->setText("Fecha Carga: "+c.getFechaCarga().toString("dd/MM/yyyy"));
 
         if(QFile::exists(c.getRutaImagen()))
         {
