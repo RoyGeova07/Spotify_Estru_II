@@ -41,7 +41,11 @@ PerfilUsuario::PerfilUsuario(const Usuario&u,QWidget*parent):QWidget(parent),usu
 
         QWidget*w=new QWidget;auto h=new QHBoxLayout(w);h->setContentsMargins(0,0,0,0);
         auto lk=new QLabel(k + ":");lk->setStyleSheet("color:#b3b3b3; font-size:14px;");
-        auto lv=new QLabel(v);lv->setStyleSheet("color:white;   font-size:14px;");
+
+        auto lv=new QLabel(v);
+        lv->setObjectName("valor");
+        lv->setStyleSheet("color:white;   font-size:14px;");
+
         h->addWidget(lk); h->addWidget(lv,1);return w;
 
     };

@@ -3,6 +3,7 @@ debug/cancion.o
 debug/controlreproduccion.o
 debug/gestorartistas.o
 debug/gestorcanciones.o
+debug/gestorreproduccion.o
 debug/gestorusuarios.o
 debug/home.o
 debug/login.o

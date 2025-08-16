@@ -144,7 +144,7 @@ void VisitaPerfilArtista::construirUI()
 
         int epValidos=0;
         for(auto it=eps.begin();it!=eps.end();++it)
-            if(it.value().size()>=3) ++epValidos;
+            if(it.value().size()>=1) ++epValidos;
 
         if(epValidos==0)
         {
@@ -173,7 +173,7 @@ void VisitaPerfilArtista::construirUI()
             {
 
                 const QVector<Cancion>& epCanciones=it.value();
-                if(epCanciones.size()<3)continue;
+                if(epCanciones.isEmpty())continue;
 
                 QFrame*item=new QFrame();
                 item->setFixedWidth(150);
@@ -253,7 +253,7 @@ void VisitaPerfilArtista::construirUI()
 
         int albumsValidos=0;
         for(auto it=albums.begin();it!=albums.end();++it)
-            if(it.value().size()>=8)++albumsValidos;
+            if(it.value().size()>=1)++albumsValidos;
 
         if(albumsValidos==0)
         {
@@ -282,7 +282,7 @@ void VisitaPerfilArtista::construirUI()
             {
 
                 const QVector<Cancion>& albumCanciones=it.value();
-                if(albumCanciones.size()<8) continue;
+                if(albumCanciones.isEmpty())continue;
 
                 QFrame*item=new QFrame();
                 item->setFixedWidth(150);

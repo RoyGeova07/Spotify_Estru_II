@@ -21,6 +21,7 @@ private slots:
 
     void Regresar();
     void AbrirPorGenero(Genero g);
+    void eliminarPlaylistPorNombre(const QString& nombre);
 
 private:
 
@@ -30,6 +31,8 @@ private:
 
     void cargarPlaylists();
     void crearPlaylist();
+
+    bool playlistTieneCanciones(const QString& pathDat) const;
 
 };
 #endif // HOME_H

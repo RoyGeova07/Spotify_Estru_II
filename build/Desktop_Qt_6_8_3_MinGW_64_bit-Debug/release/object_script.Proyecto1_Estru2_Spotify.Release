@@ -3,6 +3,7 @@ release/cancion.o
 release/controlreproduccion.o
 release/gestorartistas.o
 release/gestorcanciones.o
+release/gestorreproduccion.o
 release/gestorusuarios.o
 release/home.o
 release/login.o

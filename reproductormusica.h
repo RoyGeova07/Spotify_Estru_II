@@ -14,6 +14,8 @@
 #include"home.h"
 #include"controlreproduccion.h"
 #include"sliderclickable.h"
+#include"gestorreproduccion.h"
+#include"gestorcanciones.h"
 
 class ReproductorMusica:public QWidget
 {
@@ -94,6 +96,16 @@ private:
         }
 
     }
+
+    //PARA REGISTRAR EVENTOS
+    qint64 posMsActual=0;//POSICION ACTUAL en ms
+    qint64 durMsActual=0;//DURACION ACTUAL en ms
+    int idxActual=-1;//INDICE DE LA CANCION ACTUAL EN LA LISTA
+    GestorReproduccion logger{"reproducciones.dat"};
+
+    void flushEventoActual();//GUARDA EL EVENTO DEL TEMA QUE SE ESTABA OYENDO
+    bool estaEnCatalogoVigente(const Cancion&c)const;
+    bool navegandoAHome=false;
 
 };
 

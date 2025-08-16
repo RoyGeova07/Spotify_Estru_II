@@ -16,6 +16,7 @@
 #include<QDir>
 #include<QCryptographicHash>
 #include<QTextStream>
+#include<QDateTime>
 
 ReproductorMusica::ReproductorMusica(const QVector<Cancion>& canciones, const Usuario& usuario, QWidget *parent,bool modoPlaylist,const QString&pathPlaylist): QWidget(parent), listaCanciones(canciones), usuarioActivo(usuario), indiceActual(0),esDesdePlaylist(modoPlaylist),rutaPlaylistDat(pathPlaylist)
 {
@@ -26,6 +27,22 @@ ReproductorMusica::ReproductorMusica(const QVector<Cancion>& canciones, const Us
 
     control=new ControlReproduccion(this);
     control->setListaCanciones(listaCanciones);
+
+    //auto*player=control->getReproductor();
+
+    // //1. actualizar posicion/duracion en variables
+    // connect(player,&QMediaPlayer::positionChanged,this,[this](qint64 p)
+    // {
+
+    //     posMsActual=p;
+
+    // });
+    // connect(player,&QMediaPlayer::durationChanged,this,[this](qint64 p)
+    // {
+
+    //     durMsActual=d;
+
+    // });
 
     //AQUI SE ACTUALIZA LA BARRA DE PROGRESO Y DURACION DEL REPRODUCTOR DE CONTROL
     connect(control->getReproductor(),&QMediaPlayer::positionChanged,this,&ReproductorMusica::actualizarPosicion);
@@ -380,10 +397,12 @@ void ReproductorMusica::configurarInterfaz()
 
             QPushButton*btnPrimario=nullptr;
 
+            QListWidgetItem*item=new QListWidgetItem(listaWidget);//DECLARAR AQUI SIN BUGUEAR LAS CARDS DE LAS MUSICAS
+
             if(!esDesdePlaylist)
             {
 
-                btnPrimario=new QPushButton("➕ Agregar");
+                btnPrimario=new QPushButton("➕ Descargar");
                 btnPrimario->setCursor(Qt::PointingHandCursor);
                 btnPrimario->setFixedHeight(28);
                 btnPrimario->setStyleSheet(
@@ -412,7 +431,8 @@ void ReproductorMusica::configurarInterfaz()
                 connect(btnPrimario, &QPushButton::clicked, this, [=]()
                 {
 
-                    eliminarDePlaylist(i);
+                    int idxActual=listaWidget->row(item);
+                    eliminarDePlaylist(idxActual);
 
                 });
 
@@ -430,7 +450,6 @@ void ReproductorMusica::configurarInterfaz()
             filaLayout->addStretch();
             filaLayout->addWidget(btnPrimario);
 
-            QListWidgetItem*item=new QListWidgetItem(listaWidget);
             item->setSizeHint(filaWidget->sizeHint());
             listaWidget->addItem(item);
             listaWidget->setItemWidget(item, filaWidget);
@@ -478,10 +497,32 @@ void ReproductorMusica::configurarInterfaz()
 void ReproductorMusica::cerrarReproductor()
 {
 
-    Home*h=new Home(usuarioActivo,nullptr);
-    this->close();
-    this->hide();
-    h->show();
+    if(control&&control->getReproductor()->playbackState()==QMediaPlayer::PlayingState)
+    {
+
+        auto r=QMessageBox::question(this,"Detener reproduccion","¿Deseas cerrar el reproductor? La musica dejara de escucharse.",QMessageBox::Yes|QMessageBox::No);
+        if(r!=QMessageBox::Yes)
+        {
+
+            return;//no cierra ni navega
+
+        }
+        control->detener();
+    }
+
+    //Intenta cerrar la ventana (esto disparara closeEvent)
+    navegandoAHome=true;
+    const bool cerro=QWidget::close();   // respeta closeEvent (puede ser ignorado)
+    navegandoAHome=false;
+
+    if(cerro)
+    {
+
+        // El cierre fue aceptado: ahora si navegamos al Home
+        Home* h = new Home(usuarioActivo, nullptr);
+        h->show();
+
+    }
 
 }
 
@@ -516,31 +557,33 @@ void ReproductorMusica::closeEvent(QCloseEvent *event)
 {
 
     //Si la musica esta sonando, se muestra una advertencia.
-    if(control->getReproductor()->playbackState()==QMediaPlayer::PlayingState)
+    if(!navegandoAHome)
     {
 
-        QMessageBox::StandardButton respuesta=QMessageBox::question(this, "Detener reproduccion","¿Deseas cerrar el reproductor? La musica dejara de escucharse.",QMessageBox::Yes|QMessageBox::No);
-
-        //Si el usuario acepta, se detiene la musica y se cierra.
-        if(respuesta==QMessageBox::Yes)
+        if(control->getReproductor()->playbackState()==QMediaPlayer::PlayingState)
         {
 
-            control->detener();//DETIENE LA MUSICA
-            event->accept();//CIERRA LA VENTANA
+            auto respuesta=QMessageBox::question(this,"Detener reproduccion","¿Deseas cerrar el reproductor? La musica dejara de escucharse.",QMessageBox::Yes|QMessageBox::No);
+            if(respuesta!=QMessageBox::Yes)
+            {
 
-        }else{//Si no, la ventana no se cierra.
+                event->ignore();  //no cierra la ventana
+                return;
 
-            event->ignore();//CANCELA EL CIERRE
+            }
+            control->detener();
+        }else{
+
+            control->detener(); //por si habia algo cargado en pausa
 
         }
 
-    }else{//Si no esta sonando nada, igual se detiene por si hay musica cargada pero pausada.
+    }else{
 
-
-        control->detener();//TAMBIEN DETENER SI QUEDO CARGADA
-        event->accept();
 
     }
+
+    event->accept(); // cerrar la ventana
 
 }
 
@@ -785,9 +828,19 @@ void ReproductorMusica::eliminarDePlaylist(int indexFila)
     }
     if(indexFila<0||indexFila>=listaCanciones.size()) return;
 
-    const auto respuesta=QMessageBox::question(this, "Eliminar cancion","¿Eliminar esta canción de la playlist?",QMessageBox::Yes | QMessageBox::No);
-    if(respuesta!=QMessageBox::Yes)return;
+    const Cancion&c=listaCanciones[indexFila];
+    const bool disponible=estaEnCatalogoVigente(c);
 
+    const QString titulo=disponible?QStringLiteral("Eliminar de la playlist"):QStringLiteral("Eliminar de tu biblioteca");
+
+    const QString texto=disponible? QStringLiteral("¿Eliminar esta canción de la playlist?"): QStringLiteral("¿Estás seguro de eliminar esta música de tu biblioteca?\n""Si la borras no la podrás volver a descargar debido a que el artista ya ""borró esa canción de su catálogo.\n\n""Presione Sí para eliminar la canción.");
+
+    if(QMessageBox::question(this, titulo, texto,QMessageBox::Yes | QMessageBox::No)!=QMessageBox::Yes)
+    {
+
+        return;
+
+    }
     // 1) Leer todo el .dat, saltando el indexFila
     QVector<Cancion> reescribir;
     reescribir.reserve(listaCanciones.size()-1);
@@ -866,6 +919,12 @@ void ReproductorMusica::eliminarDePlaylist(int indexFila)
     // 6) Actualizar la lista en el controlador del reproductor
     control->setListaCanciones(listaCanciones);
 
+    //con esto detecta si la cancion eliminada era la que sonaba
+    const bool estabaReproduciendo=(control->getReproductor()->playbackState()==QMediaPlayer::PlayingState);
+
+    const int idxEnUI=listaWidget->currentRow();
+    const bool borraLaQueSonaba=(idxEnUI==indexFila);
+
     //7) Ajustar seleccion / reproduccion actual
     int count=listaWidget->count();
     if(count==0)
@@ -888,9 +947,66 @@ void ReproductorMusica::eliminarDePlaylist(int indexFila)
         int target=qMin(indexFila,count-1);
         listaWidget->setCurrentRow(target);
 
+        //si borre la que estaba sonando, detengo playBack
+        if(borraLaQueSonaba&&estabaReproduciendo)
+        {
+
+            control->detener();
+
+        }
+
     }
 
     //8) aviso
     QMessageBox::information(this, "Playlist", "Cancion eliminada de la playlist.");
+
+}
+
+bool ReproductorMusica::estaEnCatalogoVigente(const Cancion &c) const
+{
+
+    GestorCanciones gestor;
+    const QVector<Cancion>todas=gestor.leerCanciones();
+
+    auto norm=[](QString s)
+    {
+
+        return s.trimmed().toLower().simplified();
+
+    };
+
+    //Preferir ID si es valido
+    if(c.getId()>0)
+    {
+
+        for(const Cancion&x:todas)
+        {
+
+            if(x.getId()==c.getId())
+            {
+
+                return x.estaActiva();   // <- sin QFile::exists
+
+            }
+
+        }
+    }
+
+    //Fallback por Título + Artista (para playlists sin id)
+    const QString tRef=norm(c.getTitulo());
+    const QString aRef=norm(c.getNombreArtista());
+    for(const Cancion&x:todas)
+    {
+
+        if(norm(x.getTitulo())==tRef&&norm(x.getNombreArtista())==aRef)
+        {
+
+            return x.estaActiva();       // <- sin QFile::exists
+
+        }
+
+    }
+
+    return false;
 
 }

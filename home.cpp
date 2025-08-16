@@ -65,6 +65,30 @@ Home::Home(const Usuario& usuarioActivo, QWidget *parent): QWidget(parent), usua
             background-color: #1ed760;
         }
     )");
+
+    //BotonEliminar playlist seleccionada
+    QPushButton*btnEliminar=new QPushButton("🗑");
+    btnEliminar->setFixedSize(30,30);
+    btnEliminar->setCursor(Qt::PointingHandCursor);
+    btnEliminar->setToolTip("Eliminar playlist seleccionada");
+    btnEliminar->setStyleSheet(R"(
+        QPushButton {
+            background-color: #E53935;  /* rojo */
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 16px;
+        }
+        QPushButton:hover {
+            background-color: #ef5350;
+        }
+        QPushButton:disabled {
+            background-color: #444;
+            color: #888;
+        }
+    )");
+
+    layoutBibliotecaHeader->addWidget(btnEliminar);
     layoutBibliotecaHeader->addWidget(btnAgregar);
 
     colBiblioteca->addLayout(layoutBibliotecaHeader);
@@ -88,7 +112,49 @@ Home::Home(const Usuario& usuarioActivo, QWidget *parent): QWidget(parent), usua
 
     });
 
+    btnEliminar->setEnabled(false);
+    connect(listaPlaylists, &QListWidget::currentRowChanged, this, [=](int row)
+    {
+
+        btnEliminar->setEnabled(row>=0);
+
+    });
+
+    connect(btnEliminar, &QPushButton::clicked, this, [=]()
+    {
+
+        auto* it=listaPlaylists->currentItem();
+        if(!it)
+        {
+
+            QMessageBox::information(this, "Playlist", "Selecciona una playlist primero.");
+            return;
+
+        }
+        eliminarPlaylistPorNombre(it->text());
+
+    });
+
     cargarPlaylists();
+
+    // Menu contextual para eliminar playlists
+    listaPlaylists->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(listaPlaylists, &QListWidget::customContextMenuRequested,this,[=](const QPoint& pos)
+    {
+
+        QListWidgetItem*it=listaPlaylists->itemAt(pos);
+        if(!it)return;
+
+        QMenu menu(this);
+        QAction*actEliminar=menu.addAction("Eliminar playlist");
+        QAction*chosen=menu.exec(listaPlaylists->viewport()->mapToGlobal(pos));
+        if(chosen==actEliminar)
+        {
+
+            eliminarPlaylistPorNombre(it->text());
+
+        }
+    });
 
     connect(listaPlaylists, &QListWidget::itemDoubleClicked, this, [=](QListWidgetItem* it)
     {
@@ -430,7 +496,7 @@ Home::Home(const Usuario& usuarioActivo, QWidget *parent): QWidget(parent), usua
     {
 
         const QVector<Cancion>& epCanciones=i.value();
-        if(epCanciones.size()>=3)//EL EP ES VALIDO CON AL MENOS 3 CANCIONES
+        if(epCanciones.size()>=1)
         {
 
             QFrame*contenedorItem=new QFrame();
@@ -539,7 +605,7 @@ Home::Home(const Usuario& usuarioActivo, QWidget *parent): QWidget(parent), usua
     {
 
         const QVector<Cancion>& albumCanciones=i.value();
-        if(albumCanciones.size()>=8)//minimo 8 canciones por album
+        if(albumCanciones.size()>=1)
         {
 
             QFrame*contenedorItem=new QFrame();
@@ -981,6 +1047,71 @@ void Home::crearPlaylist()
     listaPlaylists->addItem(nombre);
     lblVacio->setVisible(false);
 
+}
 
+bool Home::playlistTieneCanciones(const QString &pathDat) const
+{
+
+    //si el archivo pesa>0, hay canciones
+    QFileInfo fi(pathDat);
+    return fi.exists()&&fi.size()>0;
+
+}
+
+void Home::eliminarPlaylistPorNombre(const QString &nombre)
+{
+
+    const QString baseDir="Publico";
+    const QString carpetaUsuario=baseDir+"/Usuario_"+usuario.getNombreUsuario();
+    const QString pathDat=carpetaUsuario+"/"+nombre+".dat";
+    const QString pathIdx=pathDat+".idx";
+
+    if(!QFile::exists(pathDat))
+    {
+
+        QMessageBox::warning(this, "Playlist", "El archivo de la playlist no existe.");
+        return;
+
+    }
+
+    //Tiene canciones?
+    const bool tieneCanciones=playlistTieneCanciones(pathDat);
+
+
+    if(tieneCanciones)
+    {
+
+        const auto r=QMessageBox::question(this,"Eliminar playlist","Esta playlist tiene canciones.\n""¿Estás seguro de eliminarla?",QMessageBox::Yes | QMessageBox::No);
+        if(r!=QMessageBox::Yes)return;
+
+    }
+    //Si no tiene canciones, se elimina de un solo
+
+    //Borrar archivos (.dat y .idx si existe)
+    bool okDat=QFile::remove(pathDat);
+    bool okIdx=true;
+    if(QFile::exists(pathIdx))okIdx=QFile::remove(pathIdx);
+
+    if(!okDat||!okIdx)
+    {
+
+        QMessageBox::critical(this, "Playlist", "No se pudo eliminar uno o mas archivos de la playlist.");
+        return;
+
+    }
+
+    // Quitar de la UI
+    QList<QListWidgetItem*>items=listaPlaylists->findItems(nombre,Qt::MatchExactly);
+    if(!items.isEmpty())
+    {
+
+        delete listaPlaylists->takeItem(listaPlaylists->row(items.first()));
+
+    }
+
+    // Mostrar/ocultar placeholder
+    lblVacio->setVisible(listaPlaylists->count()==0);
+
+    QMessageBox::information(this, "Playlist", "Playlist eliminada.");
 
 }

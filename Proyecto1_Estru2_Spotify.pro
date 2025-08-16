@@ -14,6 +14,7 @@ SOURCES += \
     controlreproduccion.cpp \
     gestorartistas.cpp \
     gestorcanciones.cpp \
+    gestorreproduccion.cpp \
     gestorusuarios.cpp \
     home.cpp \
     login.cpp \
@@ -37,6 +38,7 @@ HEADERS += \
     controlreproduccion.h \
     gestorartistas.h \
     gestorcanciones.h \
+    gestorreproduccion.h \
     gestorusuarios.h \
     home.h \
     login.h \
