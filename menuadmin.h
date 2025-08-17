@@ -20,6 +20,7 @@
 #include "sliderclickable.h"
 #include <QPointer>   // Evita punteros colgantes con deleteLater().
 #include <QHeaderView>
+#include <QTableWidget>
 
 class MenuAdmin : public QWidget
 {
@@ -132,7 +133,7 @@ private:
     void refrescarSidebarFotoNombre();
 
     QWidget* crearTarjetaSeccion(const QString& titulo, QWidget* contenido);
-    QWidget* tablaDummy(const QStringList& cabeceras,int filas,bool conRanking=false);
+    QTableWidget* tablaDummy(const QStringList& cabeceras,int filas,bool conRanking=false);
 };
 
 #endif // MENUADMIN_H

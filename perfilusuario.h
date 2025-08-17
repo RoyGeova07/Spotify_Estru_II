@@ -42,6 +42,22 @@ private:
     QWidget* crearTarjeta(const QString& titulo,const QString& valor,const QString& nota=QString());
     QTableWidget* crearTabla(const QStringList& cabeceras,int filasDemo=0);
 
+    QWidget* cardEscuchas=nullptr;
+    QWidget* cardTiempo=nullptr;
+    QTableWidget* tablaTop=nullptr;
+    QWidget*cardPromedio=nullptr;
+
+    void cargarEstadisticas();
+    static QString aHMS(quint64 ms)
+    {
+
+        quint64 s=ms/1000;
+        quint64 h=s/3600; s%=3600;
+        quint64 m=s/60;   s%=60;
+        return QString("%1:%2:%3").arg(h,2,10,QChar('0')).arg(m,2,10,QChar('0')).arg(s,2,10,QChar('0'));
+
+    }
+
     void VolverHome();
 
 };

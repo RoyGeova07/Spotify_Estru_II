@@ -104,6 +104,7 @@ private:
     GestorReproduccion logger{"reproducciones.dat"};
 
     void flushEventoActual();//GUARDA EL EVENTO DEL TEMA QUE SE ESTABA OYENDO
+
     bool estaEnCatalogoVigente(const Cancion&c)const;
     bool navegandoAHome=false;
 

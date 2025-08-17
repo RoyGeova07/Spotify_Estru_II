@@ -8,6 +8,7 @@
 #include<QMessageBox>
 #include"home.h"
 #include"menuinicio.h"
+#include<QDebug>
 
 RegistroUsuario::RegistroUsuario(QWidget *parent) : QDialog(parent)
 {
@@ -187,8 +188,6 @@ void RegistroUsuario::RegistrarUsuario()
 
     }
 
-
-    QDate hoy=QDate::currentDate();
     QVector<Usuario> usuarios=gestorUsuarios.leerUsuarios();
 
     for(const Usuario &u : usuarios)
@@ -211,31 +210,54 @@ void RegistroUsuario::RegistrarUsuario()
 
     }
 
-    int idGenerado=1;
-    for(const Usuario &a:usuarios)
+    //Construir/actualizar el indice hash (por si viene vacio al iniciar el dialogo)
+    gestorUsuarios.construirIndice();
+
+    if(gestorUsuarios.existePorCorreo(correo))
     {
 
-        if(a.getId()>=idGenerado)
-            idGenerado=a.getId()+1;;
+        QMessageBox::warning(this, "Correo ya registrado", "El correo electronico ya esta en uso.");
+        return;
 
     }
+    if(gestorUsuarios.existePorNombreReal(nombreReal))
+    {
 
-    Usuario usuario(idGenerado,nombreReal,nombre,contrasena,nacimiento,hoy,genero,rutaImagen,correo,false,true);
+        QMessageBox::warning(this, "Nombre real repetido", "Ya existe un usuario con ese nombre real.");
+        return;
 
-    if(!gestorUsuarios.registrarUsuario(nombreReal,nombre, contrasena, nacimiento,genero, rutaImagen,hoy,correo,false))
+    }
+    if(gestorUsuarios.existePorUsuario(nombre))
     {
 
         QMessageBox::warning(this, "Registro fallido", "El nombre de usuario ya esta en uso.");
         return;
 
     }
+    qDebug()<<"hash(usuario)="<<GestorUsuarios::djb2(nombre);
+    qDebug()<<"hash(correo)="<<GestorUsuarios::djb2(correo);
 
-    QMessageBox::information(this, "Registro exitoso", QString("El usuario '%1' ha sido registrado correctamente.").arg(nombre));
+    QDate hoy=QDate::currentDate();
+
+    //Persistimos usando el gestor (que ademas actualiza el ondice
+    if(!gestorUsuarios.registrarUsuario(nombreReal, nombre, contrasena,nacimiento, genero, rutaImagen,hoy, correo, /*esAdmin*/ false))
+    {
+
+        QMessageBox::warning(this, "Registro fallido", "No se pudo registrar el usuario.");
+        return;
+
+    }
+
+    QMessageBox::information(this, "Registro exitoso",QString("El usuario '%1' ha sido registrado correctamente.").arg(nombre));
 
     lblResultado->setStyleSheet("color: green");
     lblResultado->setText("Usuario registrado correctamente.");
 
-    Home*h=new Home(usuario,nullptr);
+    // Crea el objeto para pasar al Home
+    int nuevoId=gestorUsuarios.generarNuevoId()-1; // el que acabamos de guardar
+    Usuario usuario(nuevoId, nombreReal, nombre, contrasena, nacimiento, hoy,genero, rutaImagen, correo, false, true);
+
+    Home*h=new Home(usuario, nullptr);
     h->show();
     this->close();
 

@@ -22,6 +22,22 @@
 #include <QGridLayout>
 #include <QPlainTextEdit>
 #include <QSet>
+#include"gestorreproduccion.h"
+#include"gestorusuarios.h"
+#include<limits>
+#include<QStyledItemDelegate>
+
+// Centra todo el texto de todas las celdas de las tablas
+namespace {
+class CenterDelegate : public QStyledItemDelegate {
+public:
+    using QStyledItemDelegate::QStyledItemDelegate;
+    void initStyleOption(QStyleOptionViewItem *opt, const QModelIndex &idx) const override {
+        QStyledItemDelegate::initStyleOption(opt, idx);
+        opt->displayAlignment = Qt::AlignCenter; // centro horizontal y vertical
+    }
+};
+} // namespace
 
 MenuAdmin::MenuAdmin(const Artista& artistaActivo, QWidget *parent): QWidget(parent), artista(artistaActivo)
 {
@@ -237,14 +253,28 @@ void MenuAdmin::abrirVentanaSubirCancion()
     // ===== Box de datos globales (EP/Album) =====
     auto* boxGlobal= new QGroupBox("Datos de la publicación (se aplican a todas las pistas)");
     boxGlobal->setStyleSheet(
-        "QGroupBox { color: white; font-weight: bold; border: 1px solid #4CAF50; border-radius: 8px; }"
-        "QGroupBox::title { subcontrol-origin: margin; left: 12px; padding: 0 4px; }"
-        "QLabel { color: #ddd; }"
-        "QLineEdit, QPlainTextEdit, QComboBox { background:#232323; color:#fff; border:1px solid #555; border-radius:6px; padding:6px; }"
+        "QGroupBox {"
+        "  color:#ffffff; font-weight:bold;"
+        "  border:1px solid #4CAF50; border-radius:8px;"
+        //Deja espacio arriba para que el titulo no se mezcle con el borde
+        "  margin-top:16px;"
+        "}"
+        "QGroupBox::title {"
+        //Dibuja el titulo sobre el margen, arriba a la izquierda
+        "  subcontrol-origin: margin; subcontrol-position: top left;"
+        "  left:12px; padding:0 6px;"
+        //Fondo para que el texto no 'se tape' con el borde
+        "  background:#181818;"
+        "}"
+        "QLabel { color:#ddd; }"
+        "QLineEdit, QPlainTextEdit, QComboBox {"
+        "  background:#232323; color:#fff; border:1px solid #555; border-radius:6px; padding:6px;"
+        "}"
         "QPushButton { background:#2e7d32; color:white; border:none; border-radius:8px; padding:8px 12px; }"
         "QPushButton:hover { background:#388E3C; }"
         );
     auto* g =new QGridLayout(boxGlobal);
+    g->setContentsMargins(12,12,12,12);
     g->setHorizontalSpacing(10);
     g->setVerticalSpacing(10);
 
@@ -1249,7 +1279,7 @@ QWidget* MenuAdmin::crearTarjetaSeccion(const QString &titulo, QWidget *contenid
     return card;
 }
 
-QWidget* MenuAdmin::tablaDummy(const QStringList &cabeceras, int filas,bool conRanking)
+QTableWidget* MenuAdmin::tablaDummy(const QStringList &cabeceras, int filas,bool conRanking)
 {
     QStringList headers=cabeceras;
     if(conRanking)
@@ -1261,30 +1291,46 @@ QWidget* MenuAdmin::tablaDummy(const QStringList &cabeceras, int filas,bool conR
     }
 
     auto*tabla=new QTableWidget(filas, headers.size());
+    tabla->setItemDelegate(new CenterDelegate(tabla));
 
+    //ENCABEZADOS
     tabla->setHorizontalHeaderLabels(headers);
     tabla->horizontalHeader()->setStretchLastSection(true);
-    tabla->horizontalHeader()->setDefaultAlignment(Qt::AlignLeft);
+    tabla->horizontalHeader()->setDefaultAlignment(Qt::AlignCenter);
     tabla->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    tabla->horizontalHeader()->setFixedHeight(36);
 
+    //TABLA
     tabla->verticalHeader()->setVisible(false);
     tabla->setShowGrid(false);
     tabla->setSelectionMode(QAbstractItemView::NoSelection);
     tabla->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    tabla->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    tabla->setAlternatingRowColors(true);
+    tabla->setWordWrap(false);
+    tabla->setFocusPolicy(Qt::NoFocus);
+    tabla->setFrameShape(QFrame::NoFrame);
+    tabla->setContentsMargins(6,6,6,6);
 
-    const int rowH=36;
+    //ALTURAS
+    const int rowH=38;
     tabla->verticalHeader()->setDefaultSectionSize(rowH);
-    const int headerH=34;
+    const int headerH=36;
     const int wanted=headerH+filas*rowH+24;
     const int minH=qMin(wanted,420);
     tabla->setMinimumHeight(minH);
     tabla->setMaximumHeight(minH);
-
     tabla->setStyleSheet(
-        "QHeaderView::section{background:#222;color:#ddd;border:none;padding:8px;font-weight:600;}"
-        "QTableWidget{background:#111;color:#ddd;border:1px solid #333;}"
-        "QTableWidget::item{padding:8px;font-size:14px;}"
+        "QHeaderView::section{"
+        "  background:#1c1c1c; color:#cfcfcf; border:none; padding:8px 10px;"
+        "  font-weight:600; border-top-left-radius:8px; border-top-right-radius:8px;"
+        "}"
+        "QTableWidget{"
+        "  background:#111; color:#e6e6e6; border:1px solid #2b2b2b; border-radius:12px;"
+        "  padding:6px;"
+        "}"
+        "QTableCornerButton::section{ background:#1c1c1c; border:none; }"
+        "QTableWidget::item{ padding:10px; }"
+        "QTableWidget::item:alternate{ background:#141414; }"
         );
 
     for(int r=0;r<filas;++r)
@@ -1304,30 +1350,141 @@ QWidget* MenuAdmin::tablaDummy(const QStringList &cabeceras, int filas,bool conR
         {
 
             auto*it=new QTableWidgetItem(QStringLiteral("—"));
-            it->setTextAlignment(Qt::AlignVCenter|(c==c0?Qt::AlignLeft : Qt::AlignCenter));
+            it->setTextAlignment(Qt::AlignCenter);
             it->setFlags(Qt::ItemIsEnabled);
             tabla->setItem(r,c,it);
 
         }
     }
 
+    //COLUMNA RANKING ESTRECHA
     if(conRanking)
     {
 
         tabla->horizontalHeader()->setSectionResizeMode(0,QHeaderView::Fixed);
-        tabla->setColumnWidth(0,42);
+        tabla->setColumnWidth(0,56);
         for(int c =1;c<headers.size();++c)
             tabla->horizontalHeader()->setSectionResizeMode(c,QHeaderView::Stretch);
 
     }
     return tabla;
 }
+/*
 
+    aqui uso una tabla hash porque es la forma mas simple y rapida de contar y agrupar cosas por ID (canciones,usuarios)
+
+    uso hash tambien porque es mas rapida con notacion O(1),no mantiene un orden
+
+    en pocas palabras es mi contador por id rapido, luego de eso se ordena el resultado para mostrar rankings
+
+*/
 void MenuAdmin::MostrarEstadisticas()
 {
 
     ApagarReproductor();
     LimpiarPanelDerecho();
+
+    // ====== Preparacion de datos (leer eventos y catlogos) ======
+    GestorReproduccion gr("reproducciones.dat");
+
+    QVector<EventoReproduccion>evs;
+    gr.leerTodos(evs);
+
+    GestorCanciones gc;
+    const QVector<Cancion>todas=gc.leerCanciones();
+
+    // Mapas de apoyo
+    QHash<quint32,Cancion>songById;
+    songById.reserve(todas.size());
+
+    QSet<quint32>idsDeEsteArtista;
+    const QString artistaRef=artista.getNombreArtistico().trimmed().toLower();
+
+    for(const auto&c:todas)
+    {
+
+        const quint32 sid=static_cast<quint32>(c.getId());
+        songById.insert(sid,c);
+        if(c.getNombreArtista().trimmed().toLower()==artistaRef)
+            idsDeEsteArtista.insert(sid);
+
+    }
+
+    // Contadores
+    QHash<quint32,int>cntGlobalCancion;   // songId -> escuchas validas (global)
+    QHash<quint32,int>cntArtistaCancion;  // songId -> escuchas validas (solo canciones del artista)
+    QHash<quint32,int>cntUsuario;         // userId  -> actividad (eventos)
+    QVector<qint64>sumMsPorDia(7,0);     // 0..6 = Lun..Dom
+
+    qint64 minEpoch=std::numeric_limits<qint64>::max();
+    qint64 maxEpoch=0;
+
+    for(const auto&ev:evs)
+    {
+
+        // Rango temporal y sumas por dia
+        minEpoch=qMin(minEpoch, static_cast<qint64>(ev.epochMs));
+        maxEpoch=qMax(maxEpoch, static_cast<qint64>(ev.epochMs));
+        const int dow=QDateTime::fromMSecsSinceEpoch(ev.epochMs).date().dayOfWeek(); // 1..7 (Lun..Dom)
+        sumMsPorDia[dow-1]+=ev.msPlayed;
+
+        // Actividad de usuario (eventos)
+        const bool valida=gr.cuentaComoEscucha(ev.msPlayed,ev.durMs);
+        if(valida)
+        {
+
+            cntUsuario[ev.userId]+=1;
+
+            //rankings por cancion (global y del artista)
+            cntGlobalCancion[ev.songId]+=1;
+            if(idsDeEsteArtista.contains(ev.songId))
+                cntArtistaCancion[ev.songId]+=1;
+
+        }
+
+
+    }
+
+    // Promedios por dia (semanal): total ms / #semanas en el rango
+    double semanas=1.0;
+    if(maxEpoch > minEpoch)
+    {
+
+        const double dias=(maxEpoch-minEpoch)/1000.0/60.0/60.0/24.0;
+        semanas=qMax(1.0,dias/7.0);
+
+    }
+    QVector<qint64> promMsPorDia(7,0);
+    qint64 maxAvg=0;
+    for(int i=0;i<7;++i)
+    {
+
+        promMsPorDia[i]=static_cast<qint64>(sumMsPorDia[i]/semanas);
+        maxAvg=qMax(maxAvg,promMsPorDia[i]);
+
+    }
+    auto percent=[&](qint64 v)->int
+    {
+
+
+        return (maxAvg>0)?int((v*100)/maxAvg):0;
+    };
+
+    // Helper para ordenar hash -> vector (desc por conteo)
+    auto ordenarTop=[](const QHash<quint32,int>& h,int topN)
+    {
+
+        QVector<QPair<quint32,int>> v; v.reserve(h.size());
+        for (auto it=h.begin();it!=h.end();++it)v.push_back({it.key(),it.value()});
+        std::sort(v.begin(),v.end(), [](auto a, auto b){ return a.second > b.second; });
+        if (v.size() > topN) v.resize(topN);
+        return v;
+
+    };
+
+    const auto top10Global= ordenarTop(cntGlobalCancion, 10);
+    const auto topArtista= ordenarTop(cntArtistaCancion, 8);
+    const auto topUsuarios=ordenarTop(cntUsuario, 8);
 
     auto*scroll= new QScrollArea; scroll->setWidgetResizable(true);
     scroll->setStyleSheet("QScrollArea{border:none;}");
@@ -1341,58 +1498,23 @@ void MenuAdmin::MostrarEstadisticas()
     titulo->setStyleSheet("color:white;font-size:24px;font-weight:800;");
     root->addWidget(titulo);
 
+    // --- Top 10 global ---
     auto *tblTop10= tablaDummy({"#", "Título", "Artista", "Reproducciones"}, 10, true);
     root->addWidget(crearTarjetaSeccion("Top 10 canciones más escuchadas", tblTop10));
 
+    // --- Ranking de tus canciones (global) ---
+    auto *tblPorArtista = tablaDummy({"#", "Título", "Reproducciones"}, 8, true);
+    root->addWidget(crearTarjetaSeccion(QString("Ranking global de tus canciones (%1)").arg(artista.getNombreArtistico()),tblPorArtista));
+
+    // -- CANCIONES MEJORES CALIFICADAS--
     auto *tblMejorCal =tablaDummy({"Título", "Artista", "★ Promedio", "Votos"}, 8, false);
     root->addWidget(crearTarjetaSeccion("Canciones mejor calificadas (promedio)", tblMejorCal));
 
+    // --- Usuarios mas activos ---
     auto *tblUsuariosAct =tablaDummy({"#", "Usuario", "Reproducciones"}, 8, true);
     root->addWidget(crearTarjetaSeccion("Usuarios más activos por cantidad de reproducciones", tblUsuariosAct));
 
-    auto *gridDist =new QWidget;
-    auto *grid =new QGridLayout(gridDist);
-    grid->setSpacing(12);
-    grid->setContentsMargins(0,0,0,0);
-
-    auto crearMiniHist=[](const QString& tituloCancion)
-    {
-
-        auto *box= new QFrame;
-        box->setStyleSheet("QFrame{background:#111;border:1px solid #333;border-radius:10px;}");
-        auto*v =new QVBoxLayout(box);
-        v->setContentsMargins(12,12,12,12);
-        v->setSpacing(8);
-
-        auto*t=new QLabel(tituloCancion);
-        t->setStyleSheet("color:#eee;font-weight:700;");
-        v->addWidget(t);
-
-        for(int i=1;i<=5;++i)
-        {
-
-            auto*fila=new QWidget; auto*h=new QHBoxLayout(fila);
-            h->setContentsMargins(0,0,0,0); h->setSpacing(8);
-            auto*lbl= new QLabel(QString::number(i) + "★");
-            lbl->setStyleSheet("color:#bbb;");
-            auto*bar= new QProgressBar;
-            bar->setRange(0,100); bar->setValue(20*i);
-            bar->setTextVisible(false);
-            bar->setStyleSheet(
-                "QProgressBar{background:#1c1c1c;border:1px solid #333;border-radius:6px;height:10px;}"
-                "QProgressBar::chunk{background:#1DB954;border-radius:6px;}"
-                );
-            h->addWidget(lbl);
-            h->addWidget(bar,1);
-            v->addWidget(fila);
-
-        }
-        return box;
-    };
-
-    for(int i=0;i<4;++i)grid->addWidget(crearMiniHist(QString("Canción %1").arg(i+1)),i/2,i%2);
-    root->addWidget(crearTarjetaSeccion("Distribución de calificaciones por canción", gridDist));
-
+    // --- Tiempos promedio de uso por dia ---
     auto *boxTiempo=new QFrame;
     boxTiempo->setStyleSheet("QFrame{background:#111;border:1px solid #333;border-radius:10px;}");
     auto*vTiempo=new QVBoxLayout(boxTiempo);
@@ -1407,6 +1529,7 @@ void MenuAdmin::MostrarEstadisticas()
         h->setContentsMargins(0,0,0,0); h->setSpacing(8);
         auto*lbl=new QLabel(dias[i]); lbl->setStyleSheet("color:#bbb;width:34px;");
         auto*bar=new QProgressBar; bar->setRange(0,100); bar->setValue(10+i*10);
+        bar->setValue(percent(promMsPorDia[i]));
         bar->setTextVisible(false);
         bar->setStyleSheet(
             "QProgressBar{background:#1c1c1c;border:1px solid #333;border-radius:6px;height:12px;}"
@@ -1417,18 +1540,101 @@ void MenuAdmin::MostrarEstadisticas()
         vTiempo->addWidget(fila);
 
     }
-
     root->addWidget(crearTarjetaSeccion("Tiempos promedio de uso del sistema (por día)", boxTiempo));
 
-    auto *tblTopGenero=tablaDummy({"Género", "★ Promedio"}, 7, false);
-    root->addWidget(crearTarjetaSeccion("Promedio general de calificación por género", tblTopGenero));
+    // ====== Volcar datos a tablas =====
+    // Top 10 global (Titulo — Artista, Reproducciones)
+    tblTop10->setRowCount(top10Global.size());
+    for(int i=0;i<top10Global.size();++i)
+    {
 
-    auto *tblCalificanMas=tablaDummy({"#", "Usuario", "Canciones calificadas"}, 8, true);
-    root->addWidget(crearTarjetaSeccion("Usuarios que han calificado más canciones", tblCalificanMas));
+        const auto sid=top10Global[i].first;
+        const int n=top10Global[i].second;
 
-    root->addStretch();
+        QString titulo=QString("ID %1").arg(sid);
+        QString artistaCancion="—";
+        if(songById.contains(sid))
+        {
+
+            const auto&c=songById[sid];
+            titulo=c.getTitulo();
+            artistaCancion=c.getNombreArtista();
+
+        }
+
+        tblTop10->setItem(i,0,new QTableWidgetItem(QString::number(i+1)));
+
+
+        auto*itTitulo=new QTableWidgetItem(titulo);
+        auto*itArtista= new QTableWidgetItem(artistaCancion);
+        auto*itRepros=new QTableWidgetItem(QString::number(n));
+
+        itTitulo->setTextAlignment(Qt::AlignCenter);
+        itArtista->setTextAlignment(Qt::AlignCenter);
+        itRepros->setTextAlignment(Qt::AlignCenter);
+
+        tblTop10->setItem(i,1,itTitulo);
+        tblTop10->setItem(i,2,itArtista);
+        tblTop10->setItem(i,3,itRepros);
+
+    }
+
+    // Ranking de tus canciones (sólo del artista actual)
+    tblPorArtista->setRowCount(topArtista.size());
+    for(int i=0;i<topArtista.size();++i)
+    {
+
+        const auto sid=topArtista[i].first;
+        const int n=topArtista[i].second;
+
+        QString titulo=songById.contains(sid)?songById[sid].getTitulo():QString("ID %1").arg(sid);
+        tblPorArtista->setItem(i,0,new QTableWidgetItem(QString::number(i+1)));
+
+
+        auto*itTitulo =new QTableWidgetItem(titulo);
+        auto*itRepros= new QTableWidgetItem(QString::number(n));
+
+        itTitulo->setTextAlignment(Qt::AlignCenter);
+        itRepros->setTextAlignment(Qt::AlignCenter);
+
+        tblPorArtista->setItem(i,1,itTitulo);
+        tblPorArtista->setItem(i,2,itRepros);
+
+    }
+
+    // Usuarios mas activos (id -> nombre)
+    GestorUsuarios gu;
+    const auto usuarios=gu.leerUsuarios();
+    QHash<quint32, QString> nombreUsuario;
+    for(const auto &u:usuarios)
+        nombreUsuario.insert(static_cast<quint32>(u.getId()), u.getNombreUsuario());
+
+    tblUsuariosAct->setRowCount(topUsuarios.size());
+    for(int i=0;i<topUsuarios.size();++i)
+    {
+
+        const auto uid=topUsuarios[i].first;
+        const int n=topUsuarios[i].second;
+
+        const QString nombre=nombreUsuario.value(uid, QString("ID %1").arg(uid));
+
+        tblUsuariosAct->setItem(i,0,new QTableWidgetItem(QString::number(i+1)));
+
+        auto*itNombre=new QTableWidgetItem(nombre);
+        auto*itRepros=new QTableWidgetItem(QString::number(n));
+
+        itNombre->setTextAlignment(Qt::AlignCenter);
+        itRepros->setTextAlignment(Qt::AlignCenter);
+
+        tblUsuariosAct->setItem(i,1,itNombre);
+        tblUsuariosAct->setItem(i,2,itRepros);
+
+    }
+
+    // ====== Montaje final ======
     scroll->setWidget(wrap);
     layoutDerecho->addWidget(scroll);
+
 }
 
 void MenuAdmin::seleccionarImagenGlobal()
@@ -1472,7 +1678,7 @@ void MenuAdmin::seleccionarAudiosMultiples()
     }
 
     //Rellenar y calcular duracion (silencioso)
-    for(int i=0; i<rutas.size()&&i<cancionesWidgets.size(); ++i)
+    for(int i=0;i<rutas.size()&&i<cancionesWidgets.size();++i)
     {
 
         cancionesWidgets[i].txtRutaAudio->setText(rutas[i]);

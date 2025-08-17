@@ -202,9 +202,22 @@ RegistroArtista::RegistroArtista(QWidget *parent) : QDialog(parent)
     formLayout->addLayout(botonesLayout);
     formLayout->addStretch();
 
-    QHBoxLayout *mainLayout = new QHBoxLayout(this);
-    mainLayout->addLayout(formLayout);
-    mainLayout->setContentsMargins(20, 20, 20, 20);
+    //contenedor del formulario
+    QWidget*formcontainer=new QWidget;
+    formcontainer->setLayout(formLayout);
+
+    //Scroll vertical
+    QScrollArea *scroll=new QScrollArea;
+    scroll->setWidgetResizable(true);
+    scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    scroll->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    scroll->setStyleSheet("QScrollArea{border:none;}");
+    scroll->setWidget(formcontainer);
+
+    // Layout principal (la QDialog usa este layout)
+    QVBoxLayout*mainLayout=new QVBoxLayout(this);
+    mainLayout->setContentsMargins(20,20,20,20);
+    mainLayout->addWidget(scroll);
 
     // Conexiones
     connect(btnRegistrar, &QPushButton::clicked, this, &RegistroArtista::RegistrarArtista);

@@ -8,14 +8,97 @@
 
 //QDataStream me servira para serializar y deserializar datos binarios desde y hacia un objeto QIODevice
 
-GestorUsuarios::GestorUsuarios() {}
+GestorUsuarios::GestorUsuarios(){construirIndice();}
+
+void GestorUsuarios::construirIndice()
+{
+
+    idxUsuario.clear();
+    idxCorreo.clear();
+    idxNombreReal.clear();
+
+    QFile archivo(ArchivoUsuarios);
+    if(!archivo.open(QIODevice::ReadOnly))return;
+
+    QDataStream in(&archivo);
+    while(!in.atEnd())
+    {
+
+        int id;
+        QString NombreReal,nombre,contra,genero,foto,correoElectronico;
+        QDate fecha,fechaNacimiento;
+        bool esAdmin,activo;
+
+        in>>id>>NombreReal>>nombre>>contra>>fechaNacimiento>>fecha>>genero>>foto>>correoElectronico>>esAdmin>>activo;
+
+        //Indexar solo usuarios activos; si quieres indexar tambien inactivos, quita el if.
+        if(activo)
+        {
+
+            idxUsuario.insert(norm(nombre),id);
+            idxCorreo.insert(norm(correoElectronico),id);
+            idxNombreReal.insert(norm(NombreReal),id);
+
+        }
+    }
+
+    archivo.close();
+
+}
+
+bool GestorUsuarios::existePorUsuario(const QString &nombreUsuario) const
+{
+
+    return idxUsuario.contains(norm(nombreUsuario));
+
+}
+
+bool GestorUsuarios::existePorCorreo(const QString& correo) const
+{
+
+    return idxCorreo.contains(norm(correo));
+
+}
+bool GestorUsuarios::existePorNombreReal(const QString& nombreReal) const
+{
+
+    return idxNombreReal.contains(norm(nombreReal));
+
+}
+
+
+quint32 GestorUsuarios::djb2(const QString &s)
+{
+
+    QByteArray a=s.toUtf8();
+    quint32 hash=5381;
+    for(unsigned char c:a)
+        hash=((hash<<5)+hash)+c;// hash * 33 + c
+    return hash;
+
+}
 
 int GestorUsuarios::generarNuevoId()
 {
 
-    QVector<Usuario>usuarios=leerUsuarios();
-    if(usuarios.isEmpty())return 1;
-    return usuarios.last().getId()+1;
+    //Mas robusto:max id+1
+    int maxId=0;
+    QFile archivo(ArchivoUsuarios);
+    if(!archivo.open(QIODevice::ReadOnly))return 1;
+
+    QDataStream in(&archivo);
+    while(!in.atEnd())
+    {
+
+        int id;
+        QString NombreReal,nombre,contra,genero,foto,correoElectronico;
+        QDate fecha,fechaNacimiento;
+        bool esAdmin,activo;
+        in>>id>>NombreReal>>nombre>>contra>>fechaNacimiento>>fecha>>genero>>foto>>correoElectronico>>esAdmin>>activo;
+        if(id>maxId)maxId=id;
+    }
+    archivo.close();
+    return maxId+1;
 
 }
 
@@ -48,101 +131,62 @@ QVector<Usuario> GestorUsuarios::leerUsuarios()
 
 bool GestorUsuarios::registrarUsuario(const QString &NombreReal,const QString &nombreUsuario, const QString &contrasena,const QDate &fechaNacimiento,const QString &generoFavorito, const QString &rutaFoto,const QDate &fecha,const QString &CorreoElectronico, bool esAdmin)
 {
-    QVector<Usuario>usuarios=leerUsuarios();
+    //asegurar de tener el indice cargado
+    if(idxUsuario.isEmpty()&&idxCorreo.isEmpty()&&idxNombreReal.isEmpty())
+        construirIndice();
 
-    //LEA A TODOS LOS USUARIOS DEL ARCHIVO BINARIOZZZZ
-    QString nombreLimpio=nombreUsuario.trimmed().toLower();
+    //Validacion O(1) con hash
+    const QString kUser=norm(nombreUsuario);
+    const QString kNombre=norm(NombreReal);
+    const QString kMail=norm(CorreoElectronico);
 
+    if(existePorUsuario(kUser))return false;
+    if(existePorNombreReal(kNombre))return false;
+    if(existePorCorreo(kMail))return false;
 
-    for(const Usuario&u:usuarios)
-    {
+    const int NuevoID=generarNuevoId();
 
-        if(u.getNombreUsuario().trimmed().toLower()==nombreLimpio)
-        {
-
-            return false;
-
-        }
-
-        if(u.getNombreReal().trimmed().toLower()==NombreReal)
-        {
-
-            return false;
-
-        }
-
-        if(u.getCorreo().trimmed().toLower()==CorreoElectronico)
-        {
-
-            return false;
-
-        }
-
-    }
-
-
-    int NuevoID=generarNuevoId();
-
-    for(const Usuario &u : usuarios)
-    {
-        if(u.getId()==NuevoID)
-        {
-            qWarning()<<"Conflicto de ID detectado.";
-            return false;
-        }
-    }
-
-    Usuario nuevo(NuevoID,NombreReal ,nombreUsuario, contrasena,fechaNacimiento,fecha, generoFavorito, rutaFoto, CorreoElectronico,esAdmin, true);
+    Usuario nuevo(NuevoID, NombreReal, nombreUsuario, contrasena,fechaNacimiento, fecha, generoFavorito, rutaFoto,CorreoElectronico, esAdmin, true);
 
     QFile archivo(ArchivoUsuarios);
     if(!archivo.open(QIODevice::Append))
     {
 
-        qWarning() << "No se pudo abrir el archivo para escribir.";
+        qWarning()<<"No se pudo abrir el archivo para escribir.";
         return false;
 
     }
 
     QDataStream out(&archivo);
-    out << nuevo.getId()<<nuevo.getNombreReal() <<nuevo.getNombreUsuario()<< nuevo.getContrasena()<< nuevo.getFechaNacimiento()<<nuevo.getFechaRegistro()<< nuevo.getGeneroFavorito()<< nuevo.getRutaFoto()<< nuevo.getCorreo()<<nuevo.getEsAdmin()<<nuevo.estaActivo();
-
+    out<<nuevo.getId()<<nuevo.getNombreReal()<<nuevo.getNombreUsuario()<<nuevo.getContrasena()<<nuevo.getFechaNacimiento()<<nuevo.getFechaRegistro()<<nuevo.getGeneroFavorito()<<nuevo.getRutaFoto()<<nuevo.getCorreo()<<nuevo.getEsAdmin()<<nuevo.estaActivo();
     archivo.close();
 
+    // Actualizar el indice en memoria
+    idxUsuario.insert(kUser,NuevoID);
+    idxNombreReal.insert(kNombre,NuevoID);
+    idxCorreo.insert(kMail,NuevoID);
+
+    // Asegurar carpeta de usuario
     QString baseDir="Publico";
     QDir dir;
+    if(!dir.exists(baseDir))dir.mkpath(baseDir);
 
-    if(!dir.exists(baseDir))
-    {
-
-        dir.mkpath(baseDir);
-
-    }
-
-    QString CarpetaUsuario=baseDir+"/Usuario_"+nombreUsuario;
-
-    //SI NO EXISTE , MKPATH CREA TODOS LOS DIRECTORIOS INTERMEDIOS NECESARIOS
-    if(!dir.exists(CarpetaUsuario))
-    {
-
-        if(!dir.mkpath(CarpetaUsuario))
-        {
-
-            qWarning()<<"No se pudo crear la carpeta del usuario:"<<CarpetaUsuario;
-
-        }
-
-    }
+    const QString CarpetaUsuario=baseDir+"/Usuario_"+nombreUsuario;
+    if(!dir.exists(CarpetaUsuario))dir.mkpath(CarpetaUsuario);
 
     return true;
+
 }
 
 bool GestorUsuarios::validarLogin(const QString &nombreUsuario, const QString &contrasena, Usuario &usuarioEncontrado)
 {
 
-    QVector<Usuario>usuarios=leerUsuarios();
-    for(const Usuario &u:usuarios)
-    {
+    if(!existePorUsuario(nombreUsuario))return false;
 
+    // Recuperar del archivo
+    QVector<Usuario>usuarios=leerUsuarios();
+    for(const Usuario&u:usuarios)
+    {
         if(u.getNombreUsuario()==nombreUsuario&&u.getContrasena()==contrasena&&u.estaActivo())
         {
 
@@ -150,8 +194,8 @@ bool GestorUsuarios::validarLogin(const QString &nombreUsuario, const QString &c
             return true;
 
         }
-
     }
+
     return false;
 
 }

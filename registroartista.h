@@ -12,6 +12,7 @@
 #include "gestorUsuarios.h"
 #include "gestorArtistas.h"
 #include<QDateEdit>
+#include<QScrollArea>
 
 class RegistroArtista:public QDialog{
 

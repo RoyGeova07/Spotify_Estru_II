@@ -29,7 +29,7 @@
 Home::Home(const Usuario& usuarioActivo, QWidget *parent): QWidget(parent), usuario(usuarioActivo)
 {
     setWindowTitle("Inicio");
-    setFixedSize(1100, 700);
+    setFixedSize(1100,720);
 
     QHBoxLayout*layoutColumnas=new QHBoxLayout(this);  //Columnaa principal
 
@@ -192,7 +192,16 @@ Home::Home(const Usuario& usuarioActivo, QWidget *parent): QWidget(parent), usua
                 quint32 magic; quint16 ver;
                 in>>magic>>ver;
                 if(in.status()!=QDataStream::Ok)break;
-                if(magic!=0x534F4E47||ver!=1) break; // 'SONG', v1
+                if(magic!=0x534F4E47||ver!=2) break; // 'SONG', v2
+
+                quint32 id=0;
+                if(ver>=2)
+                {
+
+                    //v2: viene el id primero
+                    in>>id;
+
+                }
 
                 QString titulo,artista,desc,rutaAudio,rutaImagen,duracionStr;
                 quint16 tipo,genero;
@@ -213,6 +222,7 @@ Home::Home(const Usuario& usuarioActivo, QWidget *parent): QWidget(parent), usua
                 in>>activo;
 
                 Cancion c;
+                c.setID(static_cast<int>(id));
                 c.setTitulo(titulo);
                 c.setNombreArtista(artista);
                 c.setTipo(static_cast<Tipo>(tipo));
@@ -240,7 +250,7 @@ Home::Home(const Usuario& usuarioActivo, QWidget *parent): QWidget(parent), usua
     //Panel lateral izquierdo
     QWidget*panelIzquierdo=new QWidget();
     panelIzquierdo->setLayout(colBiblioteca);
-    panelIzquierdo->setFixedWidth(230);
+    panelIzquierdo->setFixedWidth(260);
     panelIzquierdo->setStyleSheet("background-color: #121212; color: white; padding: 10px;");
 
     layoutColumnas->addWidget(panelIzquierdo);
@@ -253,13 +263,13 @@ Home::Home(const Usuario& usuarioActivo, QWidget *parent): QWidget(parent), usua
 
     QLabel*lblHome=new QLabel("🏠");
     lblHome->setStyleSheet("font-size: 22px;");
-    barraSuperior->addWidget(lblHome);
+    //barraSuperior->addWidget(lblHome);
 
     QLineEdit *busqueda=new QLineEdit();
     busqueda->setPlaceholderText("¿Qué quieres reproducir?");
     busqueda->setFixedHeight(30);
     busqueda->setStyleSheet("border-radius: 15px; padding-left: 10px;");
-    barraSuperior->addWidget(busqueda,1);
+    //barraSuperior->addWidget(busqueda,1);
 
     barraSuperior->addSpacerItem(new QSpacerItem(20, 20, QSizePolicy::Expanding));
 

@@ -66,3 +66,10 @@ void Cancion::setNombreArtista(const QString &a) {
 void Cancion::setTipo(Tipo t) {
     tipo = t;
 }
+
+void Cancion::setID(int i)
+{
+
+    idCancion=i;
+
+}

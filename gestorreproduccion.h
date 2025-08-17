@@ -84,12 +84,12 @@ public:
     // Lecturas para usuario / admin
     EstadisticasUsuario statsUsuario(quint32 userId,int topN=5)const;
     EstadisticasGlobales statsGlobales(int topN=10)const;
+    bool leerTodos(QVector<EventoReproduccion>&out)const;
+
 
 private:
 
     QString rutaArchivo;
-    bool leerTodos(QVector<EventoReproduccion>&out)const;
-
 
 };
 

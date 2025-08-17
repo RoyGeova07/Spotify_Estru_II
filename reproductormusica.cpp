@@ -22,27 +22,50 @@ ReproductorMusica::ReproductorMusica(const QVector<Cancion>& canciones, const Us
 {
 
     setWindowTitle("Reproductor Musical");
-    setFixedSize(900, 700);
+    setFixedSize(950,700);
     setStyleSheet("background-color: #121212; color: white;");
 
     control=new ControlReproduccion(this);
     control->setListaCanciones(listaCanciones);
 
-    //auto*player=control->getReproductor();
+    auto*player=control->getReproductor();
 
-    // //1. actualizar posicion/duracion en variables
-    // connect(player,&QMediaPlayer::positionChanged,this,[this](qint64 p)
-    // {
+    //1. actualizar posicion/duracion en variables
+    connect(player,&QMediaPlayer::positionChanged,this,[this](qint64 p)
+    {
 
-    //     posMsActual=p;
+        posMsActual=p;
 
-    // });
-    // connect(player,&QMediaPlayer::durationChanged,this,[this](qint64 p)
-    // {
+    });
+    connect(player,&QMediaPlayer::durationChanged,this,[this](qint64 p)
+    {
 
-    //     durMsActual=d;
+        durMsActual=p;
 
-    // });
+    });
+
+    // 2)Cuando termina el medio, guardamos el evento
+    connect(player,&QMediaPlayer::mediaStatusChanged, this, [this](QMediaPlayer::MediaStatus s)
+    {
+
+        if(s==QMediaPlayer::EndOfMedia)
+        {
+
+            flushEventoActual();
+
+        }
+
+    });
+
+    connect(control, &ControlReproduccion::indiceActualizado, this, [this](int nuevoIdx)
+    {
+
+        if(indiceActual>=0)flushEventoActual(); // guarda el que estaba sonando
+        indiceActual=nuevoIdx;
+        posMsActual=0;
+        durMsActual=control->getReproductor()->duration(); // puede ser 0 justo al cambiar; se actualizara luego
+
+    });
 
     //AQUI SE ACTUALIZA LA BARRA DE PROGRESO Y DURACION DEL REPRODUCTOR DE CONTROL
     connect(control->getReproductor(),&QMediaPlayer::positionChanged,this,&ReproductorMusica::actualizarPosicion);
@@ -97,9 +120,17 @@ ReproductorMusica::ReproductorMusica(const QVector<Cancion>& canciones, const Us
             rep->pause();
             btnPlayPause->setText("▶️");
 
-        }else{
+        }else if(rep->playbackState()==QMediaPlayer::PausedState){
 
-            control->reproducir(listaWidget->currentRow());
+            control->play();
+            btnPlayPause->setText("⏸️");
+
+        }else{// StoppedState u otra
+
+            int idx=listaWidget->currentRow();
+            if(idx<0)idx=control->getIndiceActual();
+            if(idx<0)idx=0;
+            control->reproducir(idx);
             btnPlayPause->setText("⏸️");
 
         }
@@ -218,7 +249,7 @@ void ReproductorMusica::configurarInterfaz()
     textoLayout->addWidget(lblTipo);
     textoLayout->addWidget(lblTitulo);
     textoLayout->addWidget(lblArtista);
-    textoLayout->addWidget(lblReproducciones);
+    //textoLayout->addWidget(lblReproducciones);
     textoLayout->addWidget(lblDescripcion);
     textoLayout->addWidget(lblGenero);
     textoLayout->addWidget(lblFechaCarga);
@@ -309,15 +340,34 @@ void ReproductorMusica::configurarInterfaz()
     lblReproEnc->setAlignment(Qt::AlignRight);
     lblReproEnc->setFixedWidth(130);
 
+    const int W_DUR = 80;     // mismo ancho que la duración en cada fila
+    const int W_BTN = 120;    // mismo ancho que el botón (Descargar / Eliminar)
+    const int GAP   = 10;     // separación entre duración y botón
+
+    // Contenedor derecho: [⏱ (W_DUR)] [GAP] [placeholder botón (W_BTN)]
+    QWidget* rightHeader = new QWidget;
+    rightHeader->setFixedWidth(W_DUR+GAP+W_BTN);
+    QHBoxLayout* rightLay = new QHBoxLayout(rightHeader);
+    rightLay->setContentsMargins(0,0,0,0);
+    rightLay->setSpacing(GAP);
+
     QLabel* lblDuracionEnc = new QLabel("⏱");
-    lblDuracionEnc->setStyleSheet("color: #b3b3b3; font-size: 14px;");
+    lblDuracionEnc->setFixedWidth(W_DUR);
     lblDuracionEnc->setAlignment(Qt::AlignRight);
-    lblDuracionEnc->setFixedWidth(60);
+    lblDuracionEnc->setStyleSheet("color: #b3b3b3; font-size: 14px;");
+
+
+    QWidget* actionsPh = new QWidget;
+    actionsPh->setFixedWidth(W_BTN);
+
+
+    rightLay->addWidget(lblDuracionEnc);
+    rightLay->addWidget(actionsPh);
 
     encabezadoLayout->addWidget(lblNum);
     encabezadoLayout->addWidget(lblTituloEnc, 1);
-    encabezadoLayout->addWidget(lblReproEnc);
-    encabezadoLayout->addWidget(lblDuracionEnc);
+    //encabezadoLayout->addWidget(lblReproEnc);
+    encabezadoLayout->addWidget(rightHeader);
     mainLayout->addWidget(encabezadoWidget);
 
     //Lista de canciones (ahora al final)
@@ -391,7 +441,7 @@ void ReproductorMusica::configurarInterfaz()
             }
 
             QLabel* lblDuracion = new QLabel(duracionStr);
-            lblDuracion->setFixedWidth(60);
+            lblDuracion->setFixedWidth(80);
             lblDuracion->setAlignment(Qt::AlignRight);
             lblDuracion->setStyleSheet("color: #b3b3b3; font-size: 14px;");
 
@@ -443,7 +493,7 @@ void ReproductorMusica::configurarInterfaz()
             filaLayout->addLayout(tituloArtistaLayout, 1);
 
 
-            filaLayout->addWidget(lblReproducciones);
+           // filaLayout->addWidget(lblReproducciones);
             filaLayout->addWidget(lblDuracion);
             //Empujar el boton al extremo derecho
             filaLayout->addSpacing(10);
@@ -497,38 +547,44 @@ void ReproductorMusica::configurarInterfaz()
 void ReproductorMusica::cerrarReproductor()
 {
 
-    if(control&&control->getReproductor()->playbackState()==QMediaPlayer::PlayingState)
+    QMediaPlayer*rep=control ? control->getReproductor() : nullptr;
+
+    if(rep&&rep->playbackState()==QMediaPlayer::PlayingState)
     {
 
-        auto r=QMessageBox::question(this,"Detener reproduccion","¿Deseas cerrar el reproductor? La musica dejara de escucharse.",QMessageBox::Yes|QMessageBox::No);
-        if(r!=QMessageBox::Yes)
-        {
+        auto r= QMessageBox::question(this, "Detener reproducción","¿Deseas cerrar el reproductor? La música dejará de escucharse.",QMessageBox::Yes |QMessageBox::No);
+        if(r!=QMessageBox::Yes)return;
 
-            return;//no cierra ni navega
+        //guardar lo escuchado antes de detener (poara no perder la posicion)
+        flushEventoActual();
 
-        }
         control->detener();
+
+    }else{
+
+        flushEventoActual();
+
     }
 
-    //Intenta cerrar la ventana (esto disparara closeEvent)
     navegandoAHome=true;
-    const bool cerro=QWidget::close();   // respeta closeEvent (puede ser ignorado)
+    const bool cerro=QWidget::close();
     navegandoAHome=false;
 
     if(cerro)
     {
 
-        // El cierre fue aceptado: ahora si navegamos al Home
-        Home* h = new Home(usuarioActivo, nullptr);
+        Home*h=new Home(usuarioActivo,nullptr);
         h->show();
 
     }
+
 
 }
 
 void ReproductorMusica::actualizarPosicion(qint64 position)
 {
 
+    posMsActual=position;
     barraProgreso->setValue(position);
     lblTiempoActual->setText(formatoTiempo(position));
 
@@ -537,6 +593,7 @@ void ReproductorMusica::actualizarPosicion(qint64 position)
 void ReproductorMusica::actualizarDuracion(qint64 duration)
 {
 
+    durMsActual=duration;
     barraProgreso->setMaximum(duration);
     lblDuracionTotal->setText(formatoTiempo(duration));
 
@@ -556,11 +613,13 @@ QString ReproductorMusica::formatoTiempo(qint64 ms)
 void ReproductorMusica::closeEvent(QCloseEvent *event)
 {
 
+    QMediaPlayer*rep=control?control->getReproductor() : nullptr;
+
     //Si la musica esta sonando, se muestra una advertencia.
     if(!navegandoAHome)
     {
 
-        if(control->getReproductor()->playbackState()==QMediaPlayer::PlayingState)
+        if(rep&&rep->playbackState()==QMediaPlayer::PlayingState)
         {
 
             auto respuesta=QMessageBox::question(this,"Detener reproduccion","¿Deseas cerrar el reproductor? La musica dejara de escucharse.",QMessageBox::Yes|QMessageBox::No);
@@ -571,8 +630,15 @@ void ReproductorMusica::closeEvent(QCloseEvent *event)
                 return;
 
             }
+
+            //guardar antes de detener
+            flushEventoActual();
+
             control->detener();
         }else{
+
+            // Pausa/Stop: guardar por si habia progreso
+            flushEventoActual();
 
             control->detener(); //por si habia algo cargado en pausa
 
@@ -580,9 +646,11 @@ void ReproductorMusica::closeEvent(QCloseEvent *event)
 
     }else{
 
+        //Navegacion programatica (volver): igual nos aseguramos
+        flushEventoActual();
+        if(control)control->detener();
 
     }
-
     event->accept(); // cerrar la ventana
 
 }
@@ -749,8 +817,10 @@ void ReproductorMusica::guardarEnPlaylist(int indexCancion)
 
     // Encabezado por registro + payload
     const quint32 kMagic = 0x534F4E47; // 'SONG'
-    const quint16 kVersion = 1;
+    const quint16 kVersion = 2;//v2 con id
+
     out <<kMagic<<kVersion;
+    out<<static_cast<quint32>(qMax(0,cSel.getId()));//id primero
 
     //Serializar campos visibles del reproductor
     out<<cSel.getTitulo();
@@ -786,8 +856,21 @@ void ReproductorMusica::guardarEnPlaylist(int indexCancion)
 QString ReproductorMusica::keyCancion(const Cancion &c) const
 {
 
-    // Preferimos rutaAudio; si no, usamos Título|Artista|Duracion
-    QString base=!c.getRutaAudio().isEmpty()?QFileInfo(c.getRutaAudio()).absoluteFilePath():c.getTitulo()+"|"+c.getNombreArtista()+"|"+QString::number(c.getDuracion().toInt());
+    QString base;
+    if(c.getId()>0)
+    {
+
+        base="ID: "+QString::number(c.getId());
+
+    }else if(!c.getRutaAudio().isEmpty()){
+
+        base=QFileInfo(c.getRutaAudio()).absoluteFilePath();
+
+    }else{
+
+        base=c.getTitulo()+"|"+c.getNombreArtista()+"|"+QString::number(c.getDuracion().toInt());
+
+    }
 
     QByteArray hash=QCryptographicHash::hash(base.toUtf8(),QCryptographicHash::Sha1);
     return QString::fromLatin1(hash.toHex());// 40 hex chars
@@ -863,12 +946,13 @@ void ReproductorMusica::eliminarDePlaylist(int indexFila)
     QDataStream out(&wf);
     out.setVersion(QDataStream::Qt_5_15);
     const quint32 kMagic=0x534F4E47; // 'SONG'
-    const quint16 kVersion=1;
+    const quint16 kVersion=2;
 
     for(const Cancion&cSel:reescribir)
     {
 
         out<<kMagic<<kVersion;
+        out<<static_cast<quint32>(qMax(0,cSel.getId()));
         out<<cSel.getTitulo();
         out<<cSel.getNombreArtista();
         out<<static_cast<quint16>(cSel.getTipo());
@@ -1008,5 +1092,62 @@ bool ReproductorMusica::estaEnCatalogoVigente(const Cancion &c) const
     }
 
     return false;
+
+}
+/*
+
+Si se escucha 20 s de un tema de 3 min:
+
+Tiempo total: +20 s
+
+Canciones escuchadas: 0 (no llego a 30s)
+
+Si se escucha 35 s y sales:
+
+Tiempo total: +35 s
+
+Canciones escuchadas:+1
+
+*/
+void ReproductorMusica::flushEventoActual()
+{
+
+    if(indiceActual<0||indiceActual>=listaCanciones.size())return;
+
+    const Cancion&c=listaCanciones[indiceActual];
+
+    quint32 played=static_cast<quint32>(qMax<qint64>(0,posMsActual));
+    quint32 dur=static_cast<quint32>(qMax<qint64>(0,durMsActual));
+
+    // Fallback: usa la duracion de la canción (en ms) si el player aun no la reporto
+    if(dur==0)
+    {
+
+        bool ok=false;
+        int ms=c.getDuracion().toInt(&ok);   // tu modelo guarda duración en MILISEGUNDOS
+        if(ok &&ms>0)dur=static_cast<quint32>(ms);
+
+    }
+
+    const qint64 now = QDateTime::currentMSecsSinceEpoch();
+    const quint32 uid = static_cast<quint32>(usuarioActivo.getId());
+    const quint32 sid = static_cast<quint32>(c.getId());
+
+    logger.registrar(uid, sid, played, dur, now);
+    //Evitar doble contabilizacion si se vuelve a flushear sin mover reproduccion
+    posMsActual=0;
+    durMsActual=0;
+    /*
+
+    Con esto, cada cambio de pista o final de tema queda append en reproducciones.dat.
+    Despues statsUsuario(...) hara los cálculos de:
+
+    totalMs = suma de ms escuchados
+
+    totalEscuchas = cuantas cumplen “escucha valida” (≥ min(30s, 50%)), y
+
+    top = (songId, conteo) ordenado por mas escuchadas.
+
+    */
 
 }

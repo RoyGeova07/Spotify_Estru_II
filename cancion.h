@@ -49,6 +49,7 @@ public:
     void desactivar();
 
     //SETTERS
+    void setID(int i);
     void setNombreArtista(const QString&a);
     void setTitulo(const QString&t);
     void setDescripcion(const QString&d);

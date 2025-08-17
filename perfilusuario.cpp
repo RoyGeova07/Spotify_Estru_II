@@ -1,6 +1,9 @@
 #include "perfilusuario.h"
 #include <QPixmap>
 #include"home.h"
+#include"gestorreproduccion.h"
+#include"gestorcanciones.h"
+#include"cancion.h"
 
 PerfilUsuario::PerfilUsuario(const Usuario&u,QWidget*parent):QWidget(parent),usuario(u)
 {
@@ -93,15 +96,17 @@ PerfilUsuario::PerfilUsuario(const Usuario&u,QWidget*parent):QWidget(parent),usu
 
     // ---- Tarjetas de resumen (placeholders) ----
     auto gridCards=new QGridLayout;
-    gridCards->setHorizontalSpacing(16);
-    gridCards->setVerticalSpacing(16);
+    gridCards->setSpacing(16);
 
-    gridCards->addWidget(crearTarjeta("Canciones escuchadas", "0", "Total histórico"), 0,0);
-    gridCards->addWidget(crearTarjeta("Tiempo de reproducción", "00:00:00", "hh:mm:ss"), 0,1);
-    gridCards->addWidget(crearTarjeta("Promedio de calificaciones", "0.0", "De 1 a 5"), 0,2);
+    cardEscuchas=crearTarjeta("Canciones escuchadas", "0", "Cuenta ≥ 30s");
+    cardTiempo=crearTarjeta("Tiempo de reproducción", "0:00:00", "Incluye parciales.");
+    cardPromedio =crearTarjeta("Promedio de calificaciones", "0.0", "Promedio de tus calificaciones (1–5).");
+
+    gridCards->addWidget(cardEscuchas,0,0);
+    gridCards->addWidget(cardTiempo,0,1);
+    gridCards->addWidget(cardPromedio,0,2);
 
     lay->addLayout(gridCards);
-
     // ---- Canciones mas escuchadas (tabla demo) ----
     {
 
@@ -111,6 +116,63 @@ PerfilUsuario::PerfilUsuario(const Usuario&u,QWidget*parent):QWidget(parent),usu
 
         auto tablaTop = crearTabla({"Título", "Artista", "Reproducciones"}, 5);
         lay->addWidget(tablaTop);
+
+        cargarEstadisticas();
+
+        //CALCULO Y PINTADO DE ESTADISTICAS
+        GestorReproduccion g("reproducciones.dat");                 //topN
+        const auto st=g.statsUsuario(static_cast<quint32>(usuario.getId()),10);
+
+        //Formateo hh:mm:ss
+        auto hhmmss=[](quint64 ms)
+        {
+
+            quint64 s=ms/1000;
+            const quint64 h=s/3600;s%=3600;
+            const quint64 m=s/60;s%=60;
+            return QString("%1:%2:%3").arg(h).arg(m,2,10,QChar('0')).arg(s,2,10,QChar('0'));
+
+        };
+
+        //Actualizar tarjetas (buscamos el QLabel llamado "valor")
+        if(auto v=cardEscuchas->findChild<QLabel*>("valor"))
+            v->setText(QString::number(st.totalEscuchas));
+        if(auto v=cardTiempo->findChild<QLabel*>("valor"))
+            v->setText(hhmmss(st.totalMs));
+
+        // Llenar tabla Top personal
+        GestorCanciones gc;
+        const auto todas=gc.leerCanciones();
+
+        //Ajustar filas a lo que realmente tenemos
+        tablaTop->setRowCount(qMax(5,st.top.size()));
+        for(int i=0;i<st.top.size();++i)
+        {
+
+            const quint32 songId=st.top[i].first;
+            const int cnt=st.top[i].second;
+
+            //BUSCAR LA CANCION POR ID
+            auto it=std::find_if(todas.begin(),todas.end(),[&](const Cancion&c){return static_cast<quint32>(c.getId())==songId;});
+
+            QString titulo=QString("ID %1").arg(songId);
+            QString artista = "—";
+            if (it != todas.end()) {
+                titulo  = it->getTitulo();
+                artista = it->getNombreArtista();
+            }
+
+            tablaTop->setItem(i, 1, new QTableWidgetItem(titulo));
+            tablaTop->setItem(i, 2, new QTableWidgetItem(artista));
+            tablaTop->setItem(i, 3, new QTableWidgetItem(QString::number(cnt)));
+        }
+        // Completar filas vacías con “—”
+        for (int r = st.top.size(); r < tablaTop->rowCount(); ++r) {
+            tablaTop->setItem(r, 1, new QTableWidgetItem("—"));
+            tablaTop->setItem(r, 2, new QTableWidgetItem("—"));
+            tablaTop->setItem(r, 3, new QTableWidgetItem("—"));
+        }
+
 
     }
 
@@ -160,6 +222,7 @@ QWidget* PerfilUsuario::crearTarjeta(const QString &titulo, const QString &valor
     lt->setStyleSheet("color:#bdbdbd; font-size:13px;");
 
     auto lv=new QLabel(valor);
+    lv->setObjectName("valor");
     lv->setStyleSheet("color:white; font-size:28px; font-weight:800;");
 
     v->addWidget(lt);
@@ -263,5 +326,77 @@ void PerfilUsuario::VolverHome()
     Home*h=new Home(usuario,nullptr);
     h->show();
     this->hide();
+
+}
+
+void PerfilUsuario::cargarEstadisticas()
+{
+
+    // 1)Leer estadisticas del usuario
+    GestorReproduccion gr("reproducciones.dat");
+    auto st=gr.statsUsuario(static_cast<quint32>(usuario.getId()), /*topN*/10);
+
+    // 2) Volcar a tarjetas
+    if(cardEscuchas){
+        if(auto lbl = cardEscuchas->findChild<QLabel*>("valor"))
+            lbl->setText(QString::number(st.totalEscuchas));
+    }
+    if(cardTiempo)
+    {
+
+        if(auto lbl=cardTiempo->findChild<QLabel*>("valor"))
+            lbl->setText(aHMS(st.totalMs));
+
+    }
+
+    // 3) Tabla “Tus canciones mas escuchadas”
+    if(!tablaTop) return;
+
+    // Mapa songId -> Cancion (para mostrar títulos/artistas)
+    GestorCanciones gc;
+    const auto todas=gc.leerCanciones();
+
+    // --- Mostrar en la tarjeta "Top promedio"
+    {
+
+        if(cardPromedio)
+        {
+
+            if(auto v=cardPromedio->findChild<QLabel*>("valor"))
+                v->setText("0.0");
+
+        }
+
+    }
+
+    QHash<quint32,Cancion> porId;
+    porId.reserve(todas.size());
+    for(const auto&c:todas)porId.insert(static_cast<quint32>(c.getId()), c);
+
+    tablaTop->setRowCount(st.top.size());
+    for(int i=0; i<st.top.size(); ++i){
+        const auto& par=st.top[i];   // {songId, conteo}
+        const auto songId=par.first;
+        const int veces=par.second;
+
+        QString tituloArtista;
+        if(porId.contains(songId))
+        {
+
+            const Cancion& c = porId[songId];
+            tituloArtista = QString("%1 — %2").arg(c.getTitulo(), c.getNombreArtista());
+
+        }else{
+
+            tituloArtista = QString("ID %1").arg(songId);
+
+        }
+
+        tablaTop->setItem(i,0,new QTableWidgetItem(QString::number(i+1)));
+        tablaTop->setItem(i,1,new QTableWidgetItem(tituloArtista));
+        auto*it=new QTableWidgetItem(QString::number(veces));
+        it->setTextAlignment(Qt::AlignRight|Qt::AlignVCenter);
+        tablaTop->setItem(i,2,it);
+    }
 
 }

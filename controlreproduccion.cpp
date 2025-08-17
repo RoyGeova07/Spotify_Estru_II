@@ -140,7 +140,7 @@ void ControlReproduccion::reproducir(int indice)
         if(reproductor->playbackState()!=QMediaPlayer::PlayingState)
         {
 
-            irANodo(actual);
+            reproductor->play();//reanudar musica y no irNodo(principio)
 
         }
         return;//si ya estaba sonando, no hacemos nada

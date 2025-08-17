@@ -74,28 +74,14 @@ bool GestorReproduccion::leerTodos(QVector<EventoReproduccion> &out)const
 
     Esta funcion define que es una 'escucha valida' (para los rankings)
 
-    Regla: cuenta si el usuario escucho al menos min(30s, 50% del tema).
-
-    Si la cancion dura 40s -> 50% = 20s -> umbral = 20s (menor que 30s).
-
-    Si la cancion dura 6 min -> 50% = 3 min -> umbral = 30s (el menor).
-
-    Intencion: evitar inflar estadisticas por toques muy cortos.
-
-
-    Ejemplos:
-    Cancion 3:00 (180 000 ms), oyo 28 000 ms -> min(30 000, 90 000) = 30 000 -> NO cuenta.
-
-    Cancion 0:40 (40 000 ms), oyo 22 000 ms -> min(30 000, 20 000) = 20 000 -> SÍ cuenta.
+    usare la regla de spotify, cuenta play si se escucho al menos 30 segundos
 
 */
 bool GestorReproduccion::cuentaComoEscucha(quint32 msPlayed, quint32 durMs)
 {
 
-    const quint32 treinta=30'000;
-    const quint32 mitad=durMs/2;
-    const quint32 umbral=std::min(treinta,mitad?mitad:treinta);
-    return msPlayed>=umbral;
+
+    return msPlayed>=30'000u;
 
 }
 /*
@@ -189,9 +175,14 @@ EstadisticasGlobales GestorReproduccion::statsGlobales(int topN) const
     for(const auto& ev : all)
     {
 
-        if (cuentaComoEscucha(ev.msPlayed, ev.durMs))
+        const bool valida=cuentaComoEscucha(ev.msPlayed,ev.durMs);
+        if(valida)
+        {
+
             porCancion[ev.songId]+=1;//para ranking global de canciones validas
-        porUsuario[ev.userId]+=1; // actividad por usuario (eventos totales)
+            porUsuario[ev.userId]+=1; // actividad por usuario (eventos totales)
+
+        }
 
     }
 
