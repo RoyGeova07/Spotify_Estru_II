@@ -13,6 +13,7 @@ SOURCES += \
     cancion.cpp \
     controlreproduccion.cpp \
     gestorartistas.cpp \
+    gestorcalificaciones.cpp \
     gestorcanciones.cpp \
     gestorreproduccion.cpp \
     gestorusuarios.cpp \
@@ -37,6 +38,7 @@ HEADERS += \
     cancion.h \
     controlreproduccion.h \
     gestorartistas.h \
+    gestorcalificaciones.h \
     gestorcanciones.h \
     gestorreproduccion.h \
     gestorusuarios.h \

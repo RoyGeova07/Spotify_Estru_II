@@ -2,6 +2,7 @@ release/artista.o
 release/cancion.o
 release/controlreproduccion.o
 release/gestorartistas.o
+release/gestorcalificaciones.o
 release/gestorcanciones.o
 release/gestorreproduccion.o
 release/gestorusuarios.o

@@ -1,5 +1,8 @@
 #include "gestorreproduccion.h"
 #include<algorithm>
+#include"cancion.h"
+#include"gestorcanciones.h"
+#include<QSet>
 
 GestorReproduccion::GestorReproduccion(const QString&ruta):rutaArchivo(ruta){}
 

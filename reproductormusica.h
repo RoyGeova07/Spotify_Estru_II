@@ -16,6 +16,8 @@
 #include"sliderclickable.h"
 #include"gestorreproduccion.h"
 #include"gestorcanciones.h"
+#include<QTimer>
+#include"gestorcalificaciones.h"
 
 class ReproductorMusica:public QWidget
 {
@@ -30,6 +32,7 @@ private slots:
     void actualizarPosicion(qint64 position);
     void actualizarDuracion(qint64 duration);
     void cerrarReproductor();
+    void calificarActual();
 
 protected:
 
@@ -107,6 +110,16 @@ private:
 
     bool estaEnCatalogoVigente(const Cancion&c)const;
     bool navegandoAHome=false;
+
+    QLabel*lblRatingPromedio=nullptr;// "4.2 (23)"
+    QPushButton*btnCalificar=nullptr;//boton
+
+    QTimer*tEscucha=nullptr;
+    qint64 escuchadoMsAcum=0;
+    bool habilitaRate=false;
+
+    void resetEscuchaYRating();                  // reset por cambio de pista
+    void actualizarUIRating(const Cancion& c);   // promedio y estado botón
 
 };
 

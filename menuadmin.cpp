@@ -26,18 +26,102 @@
 #include"gestorusuarios.h"
 #include<limits>
 #include<QStyledItemDelegate>
+#include"gestorcalificaciones.h"
+#include<QDir>
 
 // Centra todo el texto de todas las celdas de las tablas
-namespace {
-class CenterDelegate : public QStyledItemDelegate {
+namespace
+{
+
+class CenterDelegate:public QStyledItemDelegate
+{
+
 public:
+
     using QStyledItemDelegate::QStyledItemDelegate;
-    void initStyleOption(QStyleOptionViewItem *opt, const QModelIndex &idx) const override {
+
+    void initStyleOption(QStyleOptionViewItem *opt, const QModelIndex &idx) const override
+    {
+
         QStyledItemDelegate::initStyleOption(opt, idx);
-        opt->displayAlignment = Qt::AlignCenter; // centro horizontal y vertical
+        opt->displayAlignment=Qt::AlignCenter; // centro horizontal y vertical
+
     }
+
 };
+
 } // namespace
+
+
+// Busca por songId en TODAS las playlists de TODOS los usuarios (Publico/Usuario_*/ *.dat)
+// y devuelve Titulo/Artista si lo encuentra (formato v2 con id guardado).
+static bool metaDesdeCualquierPlaylist(quint32 songId, QString* outTitulo, QString* outArtista)
+{
+
+    QDir raiz("Publico");
+    if(!raiz.exists())return false;
+
+    const QStringList carpetasUsuarios=raiz.entryList(QStringList()<<"Usuario_*",QDir::Dirs|QDir::NoDotAndDotDot, QDir::Name);
+    for(const QString& carpeta:carpetasUsuarios)
+    {
+
+        QDir dirUsuario(raiz.filePath(carpeta));
+        const QStringList archivos=dirUsuario.entryList(QStringList()<<"*.dat", QDir::Files, QDir::Name);
+        for (const QString& f:archivos)
+        {
+
+            QFile in(dirUsuario.filePath(f));
+            if(!in.open(QIODevice::ReadOnly))continue;
+
+            QDataStream ds(&in);
+            ds.setVersion(QDataStream::Qt_5_15);
+
+            while(!ds.atEnd())
+            {
+                quint32 magic=0; quint16 ver=0;
+                ds>>magic>>ver;
+                if(ds.status()!=QDataStream::Ok)break;
+                if(magic != 0x534F4E47)break; //'SONG'
+
+                quint32 id=0;
+                QString titulo, artista,descripcion,rutaAudio,rutaImagen,duracionStr;
+                quint16 tipo =0, genero= 0;
+                QDate fecha;
+                qint32 reproducciones =0;
+                bool activa =false;
+
+                // Formato v2: primero viene el id (es lo que nos habilita este fallback)
+                if(ver>=2)
+                {
+
+                    ds>>id;
+
+                }
+                ds>>titulo;
+                ds>>artista;
+                ds>>tipo;
+                ds>>descripcion;
+                ds>>genero;
+                ds>>fecha;
+                ds>>duracionStr;
+                ds>>rutaAudio;
+                ds>>rutaImagen;
+                ds>>reproducciones;
+                ds>>activa;
+
+                if(ver>=2&&id==songId)
+                {
+
+                    if(outTitulo)*outTitulo=titulo;
+                    if(outArtista)*outArtista=artista;
+                    return true;
+
+                }
+            }
+        }
+    }
+    return false;
+}
 
 MenuAdmin::MenuAdmin(const Artista& artistaActivo, QWidget *parent): QWidget(parent), artista(artistaActivo)
 {
@@ -313,7 +397,7 @@ void MenuAdmin::abrirVentanaSubirCancion()
     vistaPortadaGlobal->setText("Sin imagen");
     g->addWidget(vistaPortadaGlobal, 0, 3, 3, 1); // ocupa 3 filas a la derecha
 
-    // Descripción global
+    // Descripcion global
     g->addWidget(new QLabel("Descripción (global):"),3,0);
     txtDescripcionGlobal = new QPlainTextEdit;
     txtDescripcionGlobal->setPlaceholderText("Escribe aquí la descripción del EP / Álbum (opcional)");
@@ -1507,8 +1591,291 @@ void MenuAdmin::MostrarEstadisticas()
     root->addWidget(crearTarjetaSeccion(QString("Ranking global de tus canciones (%1)").arg(artista.getNombreArtistico()),tblPorArtista));
 
     // -- CANCIONES MEJORES CALIFICADAS--
-    auto *tblMejorCal =tablaDummy({"Título", "Artista", "★ Promedio", "Votos"}, 8, false);
+
+    const int TOPN_CAL =8;   //filas visibles
+    const int MIN_VOTOS =1;  //umbral minimo de votos
+
+    auto* tblMejorCal = tablaDummy({"Título", "Artista", "★ Promedio", "Votos"}, TOPN_CAL, true);
     root->addWidget(crearTarjetaSeccion("Canciones mejor calificadas (promedio)", tblMejorCal));
+
+    // Datos desde calificaciones.dat
+    GestorCalificaciones gcal;
+    const auto topRate=gcal.topCancionesMejorCalif(TOPN_CAL, MIN_VOTOS);
+
+    tblMejorCal->clearContents();
+    tblMejorCal->setRowCount(TOPN_CAL);
+
+    // Rellenar filas reales
+    int r=0;
+    for (int i = 0; i < topRate.size() && r < TOPN_CAL; ++i)
+    {
+        const quint32 songId = topRate[i].first;
+        const double  avg    = topRate[i].second;
+
+        // Si la canciin YA NO EXISTE en el catalogo, no se muestra
+        if (!songById.contains(songId))
+            continue;
+
+        const Cancion& c = songById[songId];
+        const QString  titulo  = c.getTitulo();
+        const QString  artista = c.getNombreArtista();
+
+        // Votos (conteo)
+        double dummy = 0.0;
+        int votos = 0;
+        gcal.promedioCancion(songId, dummy, votos);
+
+        // # Puesto (col 0)
+        auto rankIt = new QTableWidgetItem(QString::number(r + 1));
+        rankIt->setFlags(Qt::ItemIsEnabled);
+        tblMejorCal->setItem(r, 0, rankIt);
+
+        // Título (col 1)
+        auto tIt = new QTableWidgetItem(titulo);
+        tIt->setFlags(Qt::ItemIsEnabled);
+        tblMejorCal->setItem(r, 1, tIt);
+
+        // Artista (col 2)
+        auto aIt = new QTableWidgetItem(artista);
+        aIt->setFlags(Qt::ItemIsEnabled);
+        tblMejorCal->setItem(r, 2, aIt);
+
+        // ★ Promedio (col 3)
+        auto pIt = new QTableWidgetItem(QString::number(avg, 'f', 2));
+        pIt->setFlags(Qt::ItemIsEnabled);
+        tblMejorCal->setItem(r, 3, pIt);
+
+        // Votos (col 4)
+        auto vIt = new QTableWidgetItem(QString::number(votos));
+        vIt->setFlags(Qt::ItemIsEnabled);
+        tblMejorCal->setItem(r, 4, vIt);
+
+        ++r; // ¡ojo! solo incremento cuando realmente pinte una fila valida
+    }
+
+
+    //Completar filas vacias
+    for (; r < TOPN_CAL; ++r)
+    {
+        auto rankIt = new QTableWidgetItem(QString::number(r + 1));
+        rankIt->setFlags(Qt::ItemIsEnabled);
+        tblMejorCal->setItem(r, 0, rankIt);
+
+        for (int c = 1; c <= 4; ++c)
+        {
+            auto dash = new QTableWidgetItem(QStringLiteral("—"));
+            dash->setFlags(Qt::ItemIsEnabled);
+            tblMejorCal->setItem(r, c, dash);
+        }
+    }
+
+    // --- Promedio de calificación de tus canciones (artista actual) ---
+    {
+
+        const int TOPN_USR_CAL=8;
+
+        QTableWidget* tblCalArt=tablaDummy({"Título", "★ Promedio", "Votos"}, TOPN_USR_CAL, /*conRanking*/true);
+        root->addWidget(crearTarjetaSeccion(QString("Promedio de calificación de tus canciones (%1)").arg(artista.getNombreArtistico()),tblCalArt));
+
+        GestorCalificaciones gcal2;
+
+        struct Row{quint32 sid; double avg; int votos;};
+        QVector<Row> rows;rows.reserve(idsDeEsteArtista.size());
+
+        //Solo canciones de este artista
+        for(auto it=idsDeEsteArtista.constBegin(); it!=idsDeEsteArtista.constEnd();++it)
+        {
+
+            double avg =0.0; int cnt=0;
+            gcal2.promedioCancion(*it,avg,cnt);// promedio y votos de esa cancion
+            if(cnt>0) rows.push_back({*it,avg,cnt});
+
+        }
+
+        // Orden: mejor promedio y, si empatan, mas votos primero
+        std::sort(rows.begin(), rows.end(), [](const Row& a, const Row& b)
+        {
+
+            if(a.avg!=b.avg)return a.avg>b.avg;
+            return a.votos>b.votos;
+
+        });
+
+        // Pintar tabla
+        tblCalArt->clearContents();
+        tblCalArt->setRowCount(TOPN_USR_CAL);
+
+        int r=0;
+        for(;r <rows.size() && r<TOPN_USR_CAL;++r)
+        {
+
+            const quint32 sid=rows[r].sid;
+            const QString titulo= songById.contains(sid)?songById[sid].getTitulo():QString("ID %1").arg(sid);
+
+            // # ranking
+            auto rankIt=new QTableWidgetItem(QString::number(r+1));
+            rankIt->setFlags(Qt::ItemIsEnabled);
+            tblCalArt->setItem(r,0,rankIt);
+
+            //Titulo
+            auto tIt=new QTableWidgetItem(titulo);
+            tIt->setFlags(Qt::ItemIsEnabled);
+            tblCalArt->setItem(r,1,tIt);
+
+            // ★ Promedio
+            auto pIt=new QTableWidgetItem(QString::number(rows[r].avg,'f',2));
+            pIt->setFlags(Qt::ItemIsEnabled);
+            tblCalArt->setItem(r,2,pIt);
+
+            // Votos
+            auto vIt=new QTableWidgetItem(QString::number(rows[r].votos));
+            vIt->setFlags(Qt::ItemIsEnabled);
+            tblCalArt->setItem(r,3,vIt);
+
+        }
+
+        // Completar con guiones si sobran filas
+        for(; r<TOPN_USR_CAL; ++r)
+        {
+
+            auto rankIt=new QTableWidgetItem(QString::number(r+1));
+            rankIt->setFlags(Qt::ItemIsEnabled);
+            tblCalArt->setItem(r,0,rankIt);
+
+            for(int c= 1; c <=3; ++c)
+            {
+
+                auto dash =new QTableWidgetItem(QStringLiteral("—"));
+                dash->setFlags(Qt::ItemIsEnabled);
+                tblCalArt->setItem(r,c,dash);
+
+            }
+
+        }
+
+    }
+
+    // --- Promedio general de calificacion por genero ---
+    {
+
+        // Tabla de 7 filas (los 7 géneros) con columna "#"
+        QTableWidget*tblGen=tablaDummy({"Género", "★ Promedio", "Votos"}, /*filas*/7, /*conRanking*/true);
+        root->addWidget(crearTarjetaSeccion("Promedio general de calificación por género", tblGen));
+
+        // 1) Cargar TODAS las calificaciones
+        GestorCalificaciones gcal;
+        QVector<RegistroCalificacion> allRates;
+        gcal.leerTodas(allRates); // lee calificaciones.dat  (userId, songId, rating, epochMs)
+
+        // 2) Acumular por genero usando el catálogo (songId -> Cancion -> Genero)
+        //Nota: usamos 'int' como clave para evitar necesidad de qHash(Genero)
+        QHash<int, QPair<long long,int>> acum; // generoIdx -> (sumaRatings, conteo)
+        for(const auto& r:allRates)
+        {
+
+            if (!songById.contains(r.songId)) continue;
+            const Genero g=songById[r.songId].getGenero();
+            auto &p=acum[static_cast<int>(g)];
+            p.first+=r.rating;
+            p.second+=1;
+
+        }
+
+        // 3) Armamos filas: primero generos con datos (ordenados por promedio desc y, si empatan, por votos),
+        //    luego los generos sin datos.
+        struct Row { int gIdx; double avg; int votos; };
+        QVector<Row> withData;
+        QVector<int>  noData;
+
+        const QVector<Genero> ordered =
+        {
+
+            Genero::Pop, Genero::Corridos, Genero::Cristianos,
+            Genero::Electronica, Genero::Regueton, Genero::Rock, Genero::Clasicas
+
+        };
+
+        for(Genero g : ordered)
+        {
+
+            const int key=static_cast<int>(g);
+            auto it=acum.find(key);
+            if(it!=acum.end() && it.value().second>0)
+            {
+
+                const double avg=double(it.value().first)/double(it.value().second);
+                withData.push_back({key,avg,it.value().second});
+
+            }else{
+
+                noData.push_back(key);
+
+            }
+
+        }
+
+        std::sort(withData.begin(), withData.end(),[](const Row& a, const Row& b){
+                      if (a.avg != b.avg) return a.avg > b.avg;  // mejor promedio primero
+                      return a.votos > b.votos;                   // si empatan, más votos primero
+                });
+
+        // 4) Pintar tabla (7 filas): primero con datos y al final los que no tienen votos
+        tblGen->clearContents();
+        tblGen->setRowCount(7);
+
+        int r=0;
+
+        // Con datos
+        for(; r< withData.size()&&r<7;++r)
+        {
+
+            const Row &row=withData[r];
+            const QString gName =generoToString(static_cast<Genero>(row.gIdx));
+
+            // Col 0 ya es "#": ponemos el ranking (r+1)
+            auto rankIt=new QTableWidgetItem(QString::number(r+1));
+            rankIt->setFlags(Qt::ItemIsEnabled);
+            tblGen->setItem(r,0,rankIt);
+
+            // Genero
+            auto gIt=new QTableWidgetItem(gName); gIt->setFlags(Qt::ItemIsEnabled);
+            tblGen->setItem(r,1,gIt);
+
+            // Promedio
+            auto pIt=new QTableWidgetItem(QString::number(row.avg,'f',2));
+            pIt->setFlags(Qt::ItemIsEnabled);
+            tblGen->setItem(r,2,pIt);
+
+            // Votos
+            auto vIt=new QTableWidgetItem(QString::number(row.votos));
+            vIt->setFlags(Qt::ItemIsEnabled);
+            tblGen->setItem(r,3,vIt);
+        }
+
+        // Sin datos (completamos hasta 7)
+        for(int k = 0; r<7&& k<noData.size(); ++k, ++r)
+        {
+
+            const QString gName =generoToString(static_cast<Genero>(noData[k]));
+
+            auto rankIt=new QTableWidgetItem(QString::number(r+1));
+            rankIt->setFlags(Qt::ItemIsEnabled);
+            tblGen->setItem(r,0,rankIt);
+
+            auto gIt =new QTableWidgetItem(gName); gIt->setFlags(Qt::ItemIsEnabled);
+            tblGen->setItem(r,1,gIt);
+
+            for(int c=2; c<=3; ++c)
+            {
+
+                auto dash=new QTableWidgetItem(QStringLiteral("—"));
+                dash->setFlags(Qt::ItemIsEnabled);
+                tblGen->setItem(r,c,dash);
+
+            }
+        }
+
+    }
 
     // --- Usuarios mas activos ---
     auto *tblUsuariosAct =tablaDummy({"#", "Usuario", "Reproducciones"}, 8, true);

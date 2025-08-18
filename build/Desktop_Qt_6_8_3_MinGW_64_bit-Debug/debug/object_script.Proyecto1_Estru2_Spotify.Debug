@@ -2,6 +2,7 @@ debug/artista.o
 debug/cancion.o
 debug/controlreproduccion.o
 debug/gestorartistas.o
+debug/gestorcalificaciones.o
 debug/gestorcanciones.o
 debug/gestorreproduccion.o
 debug/gestorusuarios.o

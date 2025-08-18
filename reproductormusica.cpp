@@ -76,6 +76,19 @@ ReproductorMusica::ReproductorMusica(const QVector<Cancion>& canciones, const Us
 
     configurarInterfaz();
 
+    if(!listaCanciones.isEmpty())
+    {
+
+        int idxIni=control->getIndiceActual();
+        if(idxIni<0||idxIni>=listaCanciones.size())idxIni=0;
+
+        //selecciona en la lista (dispara currentRowChanged para labels)
+        listaWidget->setCurrentRow(idxIni);
+
+        //y ademas, fuerza la sincronizacion del estado del boton
+        actualizarUIRating(listaCanciones[idxIni]);
+
+    }
 
     //AL CAMBIAR DE CANCION
     connect(control,&ControlReproduccion::indiceActualizado,this,[=](int indice)
@@ -96,7 +109,9 @@ ReproductorMusica::ReproductorMusica(const QVector<Cancion>& canciones, const Us
             lblCaratula->setPixmap(QPixmap(":/imagenes/default_caratula.jpg").scaled(250,250,Qt::KeepAspectRatio,Qt::SmoothTransformation));
         }
 
-
+        //VER SI ESTO ESTA BIEN COLOCADO
+        resetEscuchaYRating();
+        actualizarUIRating(listaCanciones[indice]);
     });
 
     //CONNECT PARA REPRODUCIR AL HACER CLICK
@@ -153,50 +168,49 @@ ReproductorMusica::ReproductorMusica(const QVector<Cancion>& canciones, const Us
 
     });
 
-    bool*repetirActivo=new bool(false);
-    bool*aleatorioActivo=new bool(false);
+    bool repetirActivo=false;
+    bool aleatorioActivo=false;
 
     //BOTON REPETIR
-    connect(btnRepetir,&QPushButton::clicked,this,[=]()
+    connect(btnRepetir, &QPushButton::clicked, this,[this, &repetirActivo, &aleatorioActivo]()
     {
 
-        *repetirActivo= !(*repetirActivo);
+        repetirActivo=!repetirActivo;
 
-        //SI SE ACTIVA REPETIR, SE DESACTIVA ALEATORIO
-        if(*repetirActivo)
+        if(repetirActivo)
         {
 
-            *aleatorioActivo=false;
+            aleatorioActivo=false;
             control->activarAleatorio(false);
-            btnAleatorio->setStyleSheet("");
+            this->btnAleatorio->setStyleSheet("");
 
         }
-        control->activarRepetir(*repetirActivo);
-        btnRepetir->setStyleSheet(*repetirActivo?"background-color: #1DB954;": "");
+
+        control->activarRepetir(repetirActivo);
+        this->btnRepetir->setStyleSheet(repetirActivo ? "background-color: #1DB954;" : "");
 
     });
 
     //BOTON ALEATORIO
-    connect(btnAleatorio,&QPushButton::clicked,this,[=]()
+    // BOTÓN ALEATORIO
+    connect(btnAleatorio, &QPushButton::clicked, this,[this, &repetirActivo, &aleatorioActivo]()
     {
 
-        *aleatorioActivo = !(*aleatorioActivo);
+        aleatorioActivo=!aleatorioActivo;
 
-        //SI SE ACTIVA ALEATORIO, SE DESACTIVA REPETIR
-        if(*aleatorioActivo)
+        if(aleatorioActivo)
         {
 
-            *repetirActivo=false;
+            repetirActivo=false;
             control->activarRepetir(false);
-            btnRepetir->setStyleSheet("");
+            this->btnRepetir->setStyleSheet("");
 
         }
 
-        control->activarAleatorio(*aleatorioActivo);
-        btnAleatorio->setStyleSheet(*aleatorioActivo?"background-color: #1DB954":"");
+        control->activarAleatorio(aleatorioActivo);
+        this->btnAleatorio->setStyleSheet(aleatorioActivo ? "background-color: #1DB954" : "");
 
     });
-
 }
 
 void ReproductorMusica::configurarInterfaz()
@@ -228,6 +242,30 @@ void ReproductorMusica::configurarInterfaz()
 
     lblArtista=new QLabel("Artista");
     lblArtista->setStyleSheet("font-size: 20px; color: #b3b3b3;");
+
+    QHBoxLayout*rateLayout=new QHBoxLayout();
+
+    lblRatingPromedio=new QLabel("⭐ Sin calificaciones");
+    lblRatingPromedio->setStyleSheet("font-size:14px; color:#b3b3b3;");
+
+    btnCalificar =new QPushButton("⭐ Calificar");
+    btnCalificar->setCursor(Qt::PointingHandCursor);
+    btnCalificar->setEnabled(false); // se habilita al escuchar ≥30s
+    btnCalificar->setToolTip("Disponible tras escuchar 30 segundos");
+    btnCalificar->setStyleSheet(
+        "QPushButton { background-color:#ff9800; color:white; border:none;"
+        "padding:6px 12px; border-radius:14px; font-weight:600; }"
+        "QPushButton:disabled { opacity:0.95; }"
+        );//NARANJA POR DEFECTO
+
+    rateLayout->addWidget(lblRatingPromedio);
+    rateLayout->addSpacing(8);
+    rateLayout->addWidget(btnCalificar);
+    rateLayout->addStretch();
+    textoLayout->addLayout(rateLayout);
+
+    //conexion del boton
+    connect(btnCalificar,&QPushButton::clicked,this,&ReproductorMusica::calificarActual);
 
     lblReproducciones=new QLabel("0 Reproducciones");
     lblReproducciones->setStyleSheet("font-size: 16px; color: #b3b3b3;");
@@ -263,6 +301,51 @@ void ReproductorMusica::configurarInterfaz()
     barraProgreso->setRange(0, 0);
     barraProgreso->setStyleSheet("QSlider::groove:horizontal { background: #333; height: 4px; }"
                                  "QSlider::handle:horizontal { background: #ff3333; width: 12px; }");
+
+    //Timer para medir tiempo REAL escuchado (no por posicion)
+    tEscucha=new QTimer(this);
+    tEscucha->setInterval(500);
+    connect(tEscucha,&QTimer::timeout,this,[this](){
+
+        auto*rep=control->getReproductor();
+        if(!rep)return;
+        if(rep->playbackState()==QMediaPlayer::PlayingState&&indiceActual>=0)
+        {
+
+            escuchadoMsAcum+=tEscucha->interval();
+            if(!habilitaRate&&escuchadoMsAcum>=30'000)
+            {
+
+                habilitaRate=true;
+                //si no ha calificado esta cancion, habilitar boton
+                const Cancion&c=listaCanciones[indiceActual];
+                GestorCalificaciones gc;
+                quint8 prev=0;
+                if(!gc.yaCalifico(static_cast<quint32>(usuarioActivo.getId()),static_cast<quint32>(c.getId()),&prev))
+                {
+
+                    btnCalificar->setEnabled(true);
+                    btnCalificar->setToolTip("Calificar esta cancion (1-5)");
+                    btnCalificar->setStyleSheet(
+                        "QPushButton { background-color:#1DB954; color:white; border:none;"
+                        "padding:6px 12px; border-radius:14px; font-weight:600; }"
+                        );//VERDE CUANDO YA SE PUEDE CALIFICAR
+
+                }
+
+            }
+
+        }
+
+    });
+    //arrancar/detener timer segun el estado del player
+    auto*player=control->getReproductor();
+    connect(player,&QMediaPlayer::playbackStateChanged,this,[this](QMediaPlayer::PlaybackState s){
+
+        if(s==QMediaPlayer::PlayingState) tEscucha->start(); else tEscucha->stop();
+
+    });
+
 
     connect(barraProgreso,&QSlider::sliderReleased,this,[=]()
     {
@@ -340,11 +423,11 @@ void ReproductorMusica::configurarInterfaz()
     lblReproEnc->setAlignment(Qt::AlignRight);
     lblReproEnc->setFixedWidth(130);
 
-    const int W_DUR = 80;     // mismo ancho que la duración en cada fila
-    const int W_BTN = 120;    // mismo ancho que el botón (Descargar / Eliminar)
-    const int GAP   = 10;     // separación entre duración y botón
+    const int W_DUR=80;     // mismo ancho que la duracion en cada fila
+    const int W_BTN=120;    // mismo ancho que el boton (Descargar / Eliminar)
+    const int GAP=10;     // separacion entre duracion y boton
 
-    // Contenedor derecho: [⏱ (W_DUR)] [GAP] [placeholder botón (W_BTN)]
+    // Contenedor derecho: [⏱ (W_DUR)] [GAP] [placeholder boton (W_BTN)]
     QWidget* rightHeader = new QWidget;
     rightHeader->setFixedWidth(W_DUR+GAP+W_BTN);
     QHBoxLayout* rightLay = new QHBoxLayout(rightHeader);
@@ -356,12 +439,17 @@ void ReproductorMusica::configurarInterfaz()
     lblDuracionEnc->setAlignment(Qt::AlignRight);
     lblDuracionEnc->setStyleSheet("color: #b3b3b3; font-size: 14px;");
 
+    QLabel*lblDownloadEnc=new QLabel("📥");
+    lblDownloadEnc->setFixedWidth(W_BTN);
+    lblDownloadEnc->setAlignment(Qt::AlignHCenter);
+    lblDownloadEnc->setStyleSheet("color: #b3b3b3; font-size: 14px;");
+
 
     QWidget* actionsPh = new QWidget;
     actionsPh->setFixedWidth(W_BTN);
 
-
     rightLay->addWidget(lblDuracionEnc);
+    rightLay->addWidget(lblDownloadEnc);
     rightLay->addWidget(actionsPh);
 
     encabezadoLayout->addWidget(lblNum);
@@ -535,6 +623,9 @@ void ReproductorMusica::configurarInterfaz()
 
                 }
 
+                //VER SI ESTO ESTA BIEN COLOCADO
+                resetEscuchaYRating();
+                actualizarUIRating(c);
             }
 
         });
@@ -1116,18 +1207,23 @@ void ReproductorMusica::flushEventoActual()
 
     const Cancion&c=listaCanciones[indiceActual];
 
-    quint32 played=static_cast<quint32>(qMax<qint64>(0,posMsActual));
     quint32 dur=static_cast<quint32>(qMax<qint64>(0,durMsActual));
 
-    // Fallback: usa la duracion de la canción (en ms) si el player aun no la reporto
+    // Fallback: usa la duracion de la cancion (en ms) si el player aun no la reporto
     if(dur==0)
     {
 
         bool ok=false;
-        int ms=c.getDuracion().toInt(&ok);   // tu modelo guarda duración en MILISEGUNDOS
+        int ms=c.getDuracion().toInt(&ok);// este modelo guarda duracion en MILISEGUNDOS
         if(ok &&ms>0)dur=static_cast<quint32>(ms);
 
     }
+
+    //Solo tiempo REAL escuchado (no la posicion ni los saltos con el slider)
+    quint64 played64=qMax<quint64>(0,escuchadoMsAcum);
+    if(dur>0)played64=qMin<qint64>(played64,static_cast<qint64>(dur));
+    quint32 played=static_cast<quint32>(played64);
+
 
     const qint64 now = QDateTime::currentMSecsSinceEpoch();
     const quint32 uid = static_cast<quint32>(usuarioActivo.getId());
@@ -1135,6 +1231,7 @@ void ReproductorMusica::flushEventoActual()
 
     logger.registrar(uid, sid, played, dur, now);
     //Evitar doble contabilizacion si se vuelve a flushear sin mover reproduccion
+    escuchadoMsAcum=0;
     posMsActual=0;
     durMsActual=0;
     /*
@@ -1149,5 +1246,142 @@ void ReproductorMusica::flushEventoActual()
     top = (songId, conteo) ordenado por mas escuchadas.
 
     */
+
+}
+
+void ReproductorMusica::resetEscuchaYRating()
+{
+
+    escuchadoMsAcum=0;
+    habilitaRate=false;
+    if(btnCalificar)
+    {
+
+        btnCalificar->setEnabled(false);
+        btnCalificar->setToolTip("Disponible tras escuchar 30 segundos");
+        btnCalificar->setStyleSheet(
+            "QPushButton { background-color:#ff9800; color:white; border:none;"
+            "padding:6px 12px; border-radius:14px; font-weight:600; }"
+            "QPushButton:disabled { opacity:0.95; }"
+            );//SE PONE EN NARANJA MIENTRAS PASAN LOS 30 SEGUNDOS
+
+    }
+    //si la pista actual ya fue calificada, bloquear de un solo
+    if(indiceActual>=0&&indiceActual<listaCanciones.size()&&btnCalificar)
+    {
+
+        const Cancion&c=listaCanciones[indiceActual];
+        GestorCalificaciones gc;
+        quint8 prev=0;
+        if(gc.yaCalifico(static_cast<quint32>(usuarioActivo.getId()),static_cast<quint32>(c.getId()),&prev))
+        {
+
+            btnCalificar->setEnabled(false);
+            btnCalificar->setToolTip(QString("Ya calificaste: %1★").arg(prev));
+            btnCalificar->setStyleSheet(
+                "QPushButton { background-color:#bb2d3b; color:white; border:none;"
+                "padding:6px 12px; border-radius:14px; font-weight:600; }"
+                );//SE PONE EN ROJO SI YA FUE CALIFICADA
+
+        }
+
+    }
+
+}
+
+void ReproductorMusica::actualizarUIRating(const Cancion &c)
+{
+
+    GestorCalificaciones gc;
+    double avg=0.0;int cnt=0;
+    gc.promedioCancion(static_cast<quint32>(c.getId()),avg,cnt);
+    if(cnt>0)
+    {
+
+        lblRatingPromedio->setText(QString("⭐ %1 (%2)").arg(QString::number(avg,'f',1)).arg(cnt));
+
+    }else{
+
+        lblRatingPromedio->setText("⭐ Sin calificaciones");
+
+    }
+    //si ya califico, bloquea el boton y muestra su voto
+    quint8 previo=0;
+    if(gc.yaCalifico(static_cast<quint32>(usuarioActivo.getId()),static_cast<quint32>(c.getId()), &previo))
+    {
+
+        btnCalificar->setEnabled(false);
+        btnCalificar->setToolTip(QString("Ya calificaste: %1★").arg(previo));
+
+    }else{
+
+        // Solo habilitar si ya escucho ≥30 s
+        btnCalificar->setEnabled(habilitaRate);
+
+    }
+
+}
+
+void ReproductorMusica::calificarActual()
+{
+
+    if(indiceActual<0||indiceActual>=listaCanciones.size())return;
+    const Cancion&c=listaCanciones[indiceActual];
+
+    //verificar gating y duplicado para mayor seguridad
+    GestorCalificaciones gc;
+    quint8 prev=0;
+    if(gc.yaCalifico(static_cast<quint32>(usuarioActivo.getId()),static_cast<quint32>(c.getId()),&prev))
+    {
+
+        QMessageBox::information(this,"Calificacion",QString("Ya calificaste esta canción con %1★.").arg(prev));
+        btnCalificar->setEnabled(false);
+        return;
+
+    }
+
+    if(!habilitaRate)
+    {
+
+        QMessageBox::warning(this,"Calificacion","Debes escuchar al menos 30 segundos antes de calificar.");
+        return;
+
+    }
+
+    // Dialogo simple (1..5)
+    QDialog dlg(this);
+    dlg.setWindowTitle("Calificar Cancion");
+
+    QVBoxLayout*v=new QVBoxLayout(&dlg);
+    QLabel*infoLbl=new QLabel(QString("Canción: <b>%1</b><br/>Artista: %2").arg(c.getTitulo(),c.getNombreArtista()));
+    infoLbl->setTextFormat(Qt::RichText);
+    v->addWidget(infoLbl);
+
+    QComboBox*cbo=new QComboBox;
+    for (int k=1;k<=5;++k)cbo->addItem(QString::number(k)+" ★",k);
+    cbo->setCurrentIndex(4); // 5★ por defecto
+    v->addWidget(cbo);
+
+
+    QDialogButtonBox*box=new QDialogButtonBox(QDialogButtonBox::Ok|QDialogButtonBox::Cancel);
+    v->addWidget(box);
+    QObject::connect(box,&QDialogButtonBox::accepted,&dlg,&QDialog::accept);
+    QObject::connect(box,&QDialogButtonBox::rejected,&dlg,&QDialog::reject);
+
+    if(dlg.exec()!=QDialog::Accepted)return;
+
+    const quint8 rating =static_cast<quint8>(cbo->currentData().toInt());
+    if(!gc.registrar(static_cast<quint32>(usuarioActivo.getId()),static_cast<quint32>(c.getId()),rating))
+    {
+
+        QMessageBox::critical(this, "Calificacion","No se pudo guardar la calificacion.");
+        return;
+
+    }
+
+    QMessageBox::information(this, "Calificacion",QString("¡Gracias! Registrado: %1★").arg(rating));
+
+    //refresca el promedio y bloquea el boton
+    actualizarUIRating(c);
 
 }

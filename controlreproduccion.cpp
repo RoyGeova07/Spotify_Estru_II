@@ -132,23 +132,27 @@ void ControlReproduccion::reproducir(int indice)
 
     if(indice<0||indice>=listaCanciones.size())return;//Verifica que el indice sea valido.
 
-    //SI YA ESTAMOS EN EL INDICE
-    if(actual&&indice==indiceActual)
-    {
-
-        //pero NO estA sonando (Paused o Stopped), aseguramos cargar y reproducir
-        if(reproductor->playbackState()!=QMediaPlayer::PlayingState)
-        {
-
-            reproductor->play();//reanudar musica y no irNodo(principio)
-
-        }
-        return;//si ya estaba sonando, no hacemos nada
-
-    }
     if(mapaIndices.isEmpty())construirLista();
-    irANodo(mapaIndices[indice]); // setSource + play + emite indiceActualizado
 
+    // Si es otro índice: saltar y reproducir
+    if (!actual || indice != indiceActual) {
+        irANodo(mapaIndices[indice]); // setSource + play + emite señal
+        return;
+    }
+
+    // Mismo índice: asegurarnos de que LA FUENTE esté cargada
+    const bool noMedia = (reproductor->mediaStatus() == QMediaPlayer::NoMedia)
+                         || reproductor->source().isEmpty();
+    if (noMedia) {
+        // (re)cargar la pista actual y reproducir
+        irANodo(mapaIndices[indice]); // setSource + play + emite señal
+        return;
+    }
+
+    // Ya hay media: si no está sonando, darle play
+    if (reproductor->playbackState() != QMediaPlayer::PlayingState) {
+        reproductor->play();
+    }
 }
 
 void ControlReproduccion::pausar()
