@@ -94,11 +94,30 @@ Home::Home(const Usuario& usuarioActivo, QWidget *parent): QWidget(parent), usua
     colBiblioteca->addLayout(layoutBibliotecaHeader);
 
     listaPlaylists=new QListWidget();
-    listaPlaylists->setStyleSheet(
-        "QListWidget{ background-color:#121212; color:white; border:none; }"
-        "QListWidget::item{ padding:8px; }"
-        "QListWidget::item:selected{ background:#1DB954; color:black; }"
-        );
+    listaPlaylists->setStyleSheet(R"(
+    QListWidget {
+        background-color: #121212;
+        color: white;
+        border: none;
+        padding: 6px;
+    }
+    QListWidget::item {
+        background: #181818;
+        border: 1px solid #333;
+        border-radius: 14px;
+        padding: 8px 6px 10px 6px; /* espacio para el texto bajo la portada */
+        margin: 2px;
+    }
+    QListWidget::item:hover {
+        border: 1px solid #555;
+        background: #1c1c1c;
+    }
+    QListWidget::item:selected {
+        border: 1px solid #1DB954;
+        background: #1c1c1c;
+        color: white;
+    }
+    )");
     colBiblioteca->addWidget(listaPlaylists);
 
     //Aqui placeholder de playlists

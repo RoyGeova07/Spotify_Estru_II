@@ -1,5 +1,7 @@
 #include "gestorcalificaciones.h"
 #include<algorithm>
+#include"gestorcanciones.h"
+#include<QSet>
 
 bool GestorCalificaciones::registrar(quint32 userID, quint32 songId, quint8 rating, quint64 epochMs)
 {
@@ -108,33 +110,30 @@ QVector<int> GestorCalificaciones::distribucionPorCancion(quint32 songId) const
 QVector<QPair<quint32,double>> GestorCalificaciones::topCancionesMejorCalif(int topN, int minCalifs) const
 {
 
-    QVector<RegistroCalificacion>all;
-    leerTodas(all);
-    QHash<quint32,QPair<long long,int>>acum;//songId -> (suma,count)
-    for(const auto& r:all)
-    {
-
-        auto&p=acum[r.songId];
-        p.first+=r.rating;
-        p.second+=1;
-
+    QVector<RegistroCalificacion> all; leerTodas(all);
+    QHash<quint32, QPair<long long,int>> acum;
+    for (const auto& r : all) {
+        auto &p = acum[r.songId];
+        p.first += r.rating;
+        p.second += 1;
     }
-    QVector<QPair<quint32,double>>v;
-    v.reserve(acum.size());
-    v.reserve(acum.size());
-    for(auto it=acum.begin(); it!=acum.end();++it)
+
+    // Canciones vigentes
+    QSet<quint32> activas;
     {
+        GestorCanciones gc;
+        for (const auto &c : gc.leerCanciones())
+            activas.insert(static_cast<quint32>(c.getId()));
+    }
 
-        if(it.value().second>=minCalifs)
-        {
-
-            v.push_back({it.key(),double(it.value().first)/double(it.value().second)});
-
+    QVector<QPair<quint32,double>> v; v.reserve(acum.size());
+    for (auto it = acum.begin(); it != acum.end(); ++it) {
+        if (it.value().second >= minCalifs && activas.contains(it.key())) { //SOLO vigentes
+            v.push_back({it.key(), double(it.value().first) / double(it.value().second)});
         }
-
     }
-    std::sort(v.begin(),v.end(),[](auto a,auto b){return a.second>b.second;});
-    if(v.size()>topN)v.resize(topN);
+    std::sort(v.begin(), v.end(), [](auto a, auto b){ return a.second > b.second; });
+    if (v.size() > topN) v.resize(topN);
     return v;
 
 }
@@ -143,32 +142,52 @@ QVector<QPair<quint32,int>>GestorCalificaciones::usuariosQueMasCalifican(int top
 {
 
 
-    QVector<RegistroCalificacion>all;
-    leerTodas(all);
-    QHash<quint32,int>cont; // userId -> count
-    for(const auto&r:all)cont[r.userId]+=1;
-    QVector<QPair<quint32,int>>v;v.reserve(cont.size());
-    for(auto it=cont.begin();it!=cont.end();++it)v.push_back({it.key(),it.value()});
-    std::sort(v.begin(), v.end(), [](auto a, auto b){ return a.second>b.second; });
-    if (v.size()>topN) v.resize(topN);
-    return v;
+    QVector<RegistroCalificacion> all; leerTodas(all);
 
+    // Canciones vigentes
+    QSet<quint32> activas;
+    {
+        GestorCanciones gc;
+        for (const auto &c : gc.leerCanciones())
+            activas.insert(static_cast<quint32>(c.getId()));
+    }
+
+    QHash<quint32,int> cont;
+    for (const auto& r : all) {
+        if (!activas.contains(r.songId)) continue; // descarta rastro de canciones borradas
+        cont[r.userId] += 1;
+    }
+    QVector<QPair<quint32,int>> v; v.reserve(cont.size());
+    for (auto it = cont.begin(); it != cont.end(); ++it) v.push_back({it.key(), it.value()});
+    std::sort(v.begin(), v.end(), [](auto a, auto b){ return a.second > b.second; });
+    if (v.size() > topN) v.resize(topN);
+    return v;
 }
 
 StatsUsuarioRate GestorCalificaciones::statsUsuario(quint32 userId, int ultimasN) const
 {
 
-    QVector<RegistroCalificacion>all;
-    leerTodas(all);
-    StatsUsuarioRate st;
-    long long suma=0;
-    for(const auto& r:all)if(r.userId==userId){
+    QVector<RegistroCalificacion> all; leerTodas(all);
 
-        suma+=r.rating; st.cantidad+=1; st.ultimas.push_back(r);
-        if(st.ultimas.size()>ultimasN)st.ultimas.pop_front();
-
+    // Conjunto de canciones vigentes
+    QSet<quint32> activas;
+    {
+        GestorCanciones gc;
+        for (const auto &c : gc.leerCanciones())
+            activas.insert(static_cast<quint32>(c.getId()));
     }
-    if(st.cantidad>0)st.promedioOtorgado=double(suma)/double(st.cantidad);
-    return st;
 
+    StatsUsuarioRate st;
+    long long suma = 0;
+
+    for (const auto& r : all) {
+        if (r.userId != userId) continue;
+        if (!activas.contains(r.songId)) continue;//IGNORA canciones borradas
+        suma += r.rating;
+        st.cantidad += 1;
+        st.ultimas.push_back(r);
+        if (st.ultimas.size() > ultimasN) st.ultimas.pop_front();
+    }
+    if (st.cantidad > 0) st.promedioOtorgado = double(suma) / double(st.cantidad);
+    return st;
 }

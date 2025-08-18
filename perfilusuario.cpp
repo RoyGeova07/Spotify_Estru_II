@@ -217,12 +217,11 @@ PerfilUsuario::PerfilUsuario(const Usuario&u,QWidget*parent):QWidget(parent),usu
 
     // ---- Ultimas canciones calificadas (tabla demo) ----
     {
-
-        auto lbl=new QLabel("Ultimas canciones calificadas");
+        auto lbl = new QLabel("Ultimas canciones calificadas");
         lbl->setStyleSheet("font-size:18px; font-weight:600;");
         lay->addWidget(lbl);
 
-        auto tablaCal=crearTabla({"Título", "Artista", "Calificación", "Fecha"}, 5);
+        auto tablaCal = crearTabla({"Título", "Artista", "Calificación", "Fecha"}, 5);
         lay->addWidget(tablaCal);
 
         tablaCal->setItemDelegateForColumn(0,new CenterDelegate(tablaCal)); //#
@@ -247,66 +246,61 @@ PerfilUsuario::PerfilUsuario(const Usuario&u,QWidget*parent):QWidget(parent),usu
 
         }
 
-        // Mapa songId -> Cancion para mostrar titulo/artista
+        // Mapa songId -> Cancion (solo catalogo vigente en canciones.dat)
         GestorCanciones gc;
         const auto todas=gc.leerCanciones();
         QHash<quint32,Cancion>porId;
         porId.reserve(todas.size());
-        for(const auto&c:todas)porId.insert(static_cast<quint32>(c.getId()),c);
+        for(const auto&c:todas)
+            porId.insert(static_cast<quint32>(c.getId()),c);
 
-        // Mostrar las 5 mas recientes (su.ultimas viene con "mas recientes al final")
-        const int N=qMin(5,su.ultimas.size());
-        //La tabla ya viene con 5 filas demo y "—", solo rellenar las N primeras
-        for(int i=0;i<N;++i)
+        // Tomar las 5 mas recientes CUYAS canciones sigan vigentes en canciones.dat
+        QVector<RegistroCalificacion> ult;
+        ult.reserve(5);
+        for(int i=su.ultimas.size()-1;i>=0&&ult.size()<5;--i)
         {
 
-            const auto&r=su.ultimas[su.ultimas.size()-1-i];//recorrer desde el final
-            QString titulo  = QString();// empezamos vacios
-            QString artista = QString();
-
+            const auto& r=su.ultimas[i];
             if(porId.contains(r.songId))
             {
 
-                const auto&c=porId[r.songId];
-                titulo=c.getTitulo();
-                artista=c.getNombreArtista();
+                ult.push_back(r);  //si la cancion fue borrada, NO se agrega (sin rastro)
 
             }
 
-            // Fallback: buscar en playlists del usuario (v2 con id)
-            if(titulo.isEmpty()||artista.isEmpty())
-            {
+        }
 
-                QString tPl, aPl;
-                if(metaDesdePlaylists(usuario, static_cast<quint32>(r.songId), &tPl, &aPl))
-                {
+        //La tabla ya viene con 5 filas “—”; solo rellenamos las N primeras validas
+        const int N=ult.size();
+        for(int i=0;i<N;++i)
+        {
 
-                    if(!tPl.isEmpty())titulo=tPl;
-                    if(!aPl.isEmpty())artista=aPl;
+            const auto& r=ult[i];
+            const auto& c= porId[r.songId];
 
-                }
-
-            }
-
-            //ultimo recurso
-            if(titulo.isEmpty())  titulo=QString("ID %1").arg(r.songId);
-            if(artista.isEmpty()) artista=QStringLiteral("—");
-
-            // Col 0 ya es "#", se dejo cargada por crearTabla; solo asegurar el numero
-            auto posIt =new QTableWidgetItem(QString::number(i+1));
+            // Col 0: "#"
+            auto posIt=new QTableWidgetItem(QString::number(i+1));
             posIt->setTextAlignment(Qt::AlignCenter);
-            posIt->setFlags(posIt->flags()&~Qt::ItemIsEditable&~Qt::ItemIsSelectable);
+            posIt->setFlags(posIt->flags() & ~Qt::ItemIsEditable&~Qt::ItemIsSelectable);
             tablaCal->setItem(i,0,posIt);
 
-            auto itTitulo=new QTableWidgetItem(titulo);
-            auto itArtista=new QTableWidgetItem(artista);
+            // Columnas reales (sin fallback a playlist ni “ID %1”)
+            auto itTitulo=new QTableWidgetItem(c.getTitulo());
+            auto itArtista= new QTableWidgetItem(c.getNombreArtista());
             auto itRate=new QTableWidgetItem(QString::number(r.rating));
-            auto itFecha= new QTableWidgetItem(QDateTime::fromMSecsSinceEpoch(r.epochMs).toString("yyyy-MM-dd HH:mm"));
+            auto itFecha= new QTableWidgetItem(
+                QDateTime::fromMSecsSinceEpoch(r.epochMs).toString("yyyy-MM-dd HH:mm")
+                );
 
             itTitulo->setTextAlignment(Qt::AlignCenter);
             itArtista->setTextAlignment(Qt::AlignCenter);
             itRate->setTextAlignment(Qt::AlignCenter);
             itFecha->setTextAlignment(Qt::AlignCenter);
+
+            itTitulo->setFlags(itTitulo->flags()&~Qt::ItemIsEditable&~Qt::ItemIsSelectable);
+            itArtista->setFlags(itArtista->flags()&~Qt::ItemIsEditable&~Qt::ItemIsSelectable);
+            itRate->setFlags(itRate->flags()&~Qt::ItemIsEditable&~Qt::ItemIsSelectable);
+            itFecha->setFlags(itFecha->flags()&~Qt::ItemIsEditable&~Qt::ItemIsSelectable);
 
             tablaCal->setItem(i,1,itTitulo);
             tablaCal->setItem(i,2,itArtista);
@@ -314,8 +308,8 @@ PerfilUsuario::PerfilUsuario(const Usuario&u,QWidget*parent):QWidget(parent),usu
             tablaCal->setItem(i,4,itFecha);
 
         }
-
     }
+
 
     //OPCIONAL
     auto sep=new QFrame; sep->setFrameShape(QFrame::HLine); sep->setStyleSheet("color:#333;");
@@ -525,6 +519,7 @@ void PerfilUsuario::cargarEstadisticas()
 
         const auto songId=st.top[i].first;
         const int veces=st.top[i].second;
+        if(!porId.contains(songId))continue;//no mostrar nada si u
 
         QString titulo=QString("ID %1").arg(songId);
         QString artista=QStringLiteral("—");

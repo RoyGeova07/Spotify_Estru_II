@@ -84,7 +84,7 @@ bool GestorReproduccion::cuentaComoEscucha(quint32 msPlayed, quint32 durMs)
 {
 
 
-    return msPlayed>=30'000u;
+    return msPlayed>=27'000;
 
 }
 /*
@@ -123,33 +123,40 @@ bool GestorReproduccion::cuentaComoEscucha(quint32 msPlayed, quint32 durMs)
 */
 EstadisticasUsuario GestorReproduccion::statsUsuario(quint32 userId, int topN) const
 {
+    QVector<EventoReproduccion> all; leerTodos(all);
 
-    QVector<EventoReproduccion>all;leerTodos(all);
-    QHash<quint32,int> porCancion;//songId -> conteo
-    EstadisticasUsuario st;// {totalEscuchas,totalMs,top}
-
-    for(const auto& ev : all)
+    // Conjunto de canciones vigentes (catalogo actual)
+    QSet<quint32> activas;
     {
-
-        if(ev.userId!=userId)continue;//filtra por usuario
-        st.totalMs+=ev.msPlayed;//suma tiempo (aunque no sea valida)
-        if(cuentaComoEscucha(ev.msPlayed, ev.durMs))
-        {
-
-            porCancion[ev.songId]+=1;//cuenta 1 escucha valida por cancion
-            st.totalEscuchas++;
-
-        }
-
+        GestorCanciones gc;
+        for (const auto &c : gc.leerCanciones())
+            activas.insert(static_cast<quint32>(c.getId()));
     }
-    //convertir hash a vector y ordenar por conteo
-    QVector<QPair<quint32,int>>v;v.reserve(porCancion.size());
-    for(auto it=porCancion.begin(); it!=porCancion.end(); ++it)v.push_back({it.key(),it.value()});
-    std::sort(v.begin(),v.end(),[](auto a,auto b){return a.second>b.second;});
-    if(v.size()>topN)v.resize(topN);
-    st.top=v;
-    return st;
 
+    QHash<quint32,int> porCancion;   // songId -> conteo
+    EstadisticasUsuario st;          // {totalEscuchas,totalMs,top}
+
+    for (const auto& ev : all)
+    {
+        if (ev.userId != userId) continue;
+        if (!activas.contains(ev.songId)) continue;           // ⟵ IGNORA canciones borradas
+
+        st.totalMs += ev.msPlayed;                            // tiempo (incluye parciales)
+        if (cuentaComoEscucha(ev.msPlayed, ev.durMs))
+        {
+            porCancion[ev.songId] += 1;
+            st.totalEscuchas++;
+        }
+    }
+
+    QVector<QPair<quint32,int>> v; v.reserve(porCancion.size());
+    for (auto it = porCancion.begin(); it != porCancion.end(); ++it)
+        v.push_back({it.key(), it.value()});
+    std::sort(v.begin(), v.end(), [](auto a, auto b){ return a.second > b.second; });
+    if (v.size() > topN) v.resize(topN);
+
+    st.top = v;
+    return st;
 }
 /*
 
@@ -171,38 +178,41 @@ EstadisticasUsuario GestorReproduccion::statsUsuario(quint32 userId, int topN) c
 */
 EstadisticasGlobales GestorReproduccion::statsGlobales(int topN) const
 {
+    QVector<EventoReproduccion> all; leerTodos(all);
 
-    QVector<EventoReproduccion> all;leerTodos(all);
-    QHash<quint32,int>porCancion,porUsuario;
-
-    for(const auto& ev : all)
+    // Canciones vigentes
+    QSet<quint32> activas;
     {
-
-        const bool valida=cuentaComoEscucha(ev.msPlayed,ev.durMs);
-        if(valida)
-        {
-
-            porCancion[ev.songId]+=1;//para ranking global de canciones validas
-            porUsuario[ev.userId]+=1; // actividad por usuario (eventos totales)
-
-        }
-
+        GestorCanciones gc;
+        for (const auto &c : gc.leerCanciones())
+            activas.insert(static_cast<quint32>(c.getId()));
     }
 
-    auto ordenarTop=[&](const QHash<quint32,int>&h)
+    QHash<quint32,int> porCancion, porUsuario;
+
+    for (const auto& ev : all)
     {
+        if (!activas.contains(ev.songId)) continue; // ⟵ IGNORA eventos de canciones borradas
 
-        QVector<QPair<quint32,int>>v; v.reserve(h.size());
-        for(auto it=h.begin(); it!=h.end(); ++it) v.push_back({it.key(), it.value()});
-        std::sort(v.begin(),v.end(),[](auto a,auto b){return a.second>b.second;});
-        if(v.size()>topN)v.resize(topN);
-        return v;
+        const bool valida = cuentaComoEscucha(ev.msPlayed, ev.durMs);
+        if (valida) porCancion[ev.songId] += 1;
 
-    };
+        // Actividad de usuarios: cuenta el evento solo si la canción está vigente
+        porUsuario[ev.userId] += 1;
+    }
 
-    EstadisticasGlobales g;
-    g.topCanciones=ordenarTop(porCancion);
-    g.usuariosMasActivos=ordenarTop(porUsuario);
-    return g;
+    // Ordenar y recortar topN (igual que antes)...
+    auto ordDesc = [](const QPair<quint32,int>& a, const QPair<quint32,int>& b){ return a.second > b.second; };
 
+    QVector<QPair<quint32,int>> topCanciones;
+    for (auto it = porCancion.begin(); it != porCancion.end(); ++it) topCanciones.push_back({it.key(), it.value()});
+    std::sort(topCanciones.begin(), topCanciones.end(), ordDesc);
+    if (topCanciones.size() > topN) topCanciones.resize(topN);
+
+    QVector<QPair<quint32,int>> usuariosMasActivos;
+    for (auto it = porUsuario.begin(); it != porUsuario.end(); ++it) usuariosMasActivos.push_back({it.key(), it.value()});
+    std::sort(usuariosMasActivos.begin(), usuariosMasActivos.end(), ordDesc);
+    if (usuariosMasActivos.size() > topN) usuariosMasActivos.resize(topN);
+
+    return { topCanciones, usuariosMasActivos };
 }

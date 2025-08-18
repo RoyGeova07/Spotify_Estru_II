@@ -67,7 +67,7 @@ static bool metaDesdeCualquierPlaylist(quint32 songId, QString* outTitulo, QStri
 
         QDir dirUsuario(raiz.filePath(carpeta));
         const QStringList archivos=dirUsuario.entryList(QStringList()<<"*.dat", QDir::Files, QDir::Name);
-        for (const QString& f:archivos)
+        for (const QString& f : archivos)
         {
 
             QFile in(dirUsuario.filePath(f));
@@ -1506,6 +1506,8 @@ void MenuAdmin::MostrarEstadisticas()
     for(const auto&ev:evs)
     {
 
+        if(!songById.contains(ev.songId))continue;
+
         // Rango temporal y sumas por dia
         minEpoch=qMin(minEpoch, static_cast<qint64>(ev.epochMs));
         maxEpoch=qMax(maxEpoch, static_cast<qint64>(ev.epochMs));
@@ -1590,86 +1592,94 @@ void MenuAdmin::MostrarEstadisticas()
     auto *tblPorArtista = tablaDummy({"#", "Título", "Reproducciones"}, 8, true);
     root->addWidget(crearTarjetaSeccion(QString("Ranking global de tus canciones (%1)").arg(artista.getNombreArtistico()),tblPorArtista));
 
-    // -- CANCIONES MEJORES CALIFICADAS--
-
-    const int TOPN_CAL =8;   //filas visibles
-    const int MIN_VOTOS =1;  //umbral minimo de votos
+    const int TOPN_CAL=8;  // filas visibles
+    const int MIN_VOTOS=1;  // umbral minimo de votos
 
     auto* tblMejorCal = tablaDummy({"Título", "Artista", "★ Promedio", "Votos"}, TOPN_CAL, true);
     root->addWidget(crearTarjetaSeccion("Canciones mejor calificadas (promedio)", tblMejorCal));
 
-    // Datos desde calificaciones.dat
+    // === Datos desde calificaciones.dat
     GestorCalificaciones gcal;
-    const auto topRate=gcal.topCancionesMejorCalif(TOPN_CAL, MIN_VOTOS);
+    const auto topRate = gcal.topCancionesMejorCalif(TOPN_CAL, MIN_VOTOS);
+
+    // OJOOOOOOOOOO: aqui REUSAMOS songById que ya fue construido arriba con todas las canciones vigentes
 
     tblMejorCal->clearContents();
     tblMejorCal->setRowCount(TOPN_CAL);
 
-    // Rellenar filas reales
+    // Rellenar filas reales (solo canciones que siguen en canciones.dat)
     int r=0;
-    for (int i = 0; i < topRate.size() && r < TOPN_CAL; ++i)
+    for(int i=0;i<topRate.size()&&r<TOPN_CAL;++i)
     {
-        const quint32 songId = topRate[i].first;
-        const double  avg    = topRate[i].second;
 
-        // Si la canciin YA NO EXISTE en el catalogo, no se muestra
-        if (!songById.contains(songId))
+        const quint32 songId=topRate[i].first;
+        const double  avg=topRate[i].second;
+
+        //Filtra: si la cancion ya no existe en el catalogo vigente, se omite (sin rastro)
+        if(!songById.contains(songId))
             continue;
 
-        const Cancion& c = songById[songId];
-        const QString  titulo  = c.getTitulo();
-        const QString  artista = c.getNombreArtista();
+        const Cancion&c=songById[songId];
 
-        // Votos (conteo)
-        double dummy = 0.0;
-        int votos = 0;
+        // Votos (conteo actual)
+        double dummy=0.0;
+        int votos=0;
         gcal.promedioCancion(songId, dummy, votos);
 
         // # Puesto (col 0)
-        auto rankIt = new QTableWidgetItem(QString::number(r + 1));
+        auto rankIt = new QTableWidgetItem(QString::number(r+1));
         rankIt->setFlags(Qt::ItemIsEnabled);
-        tblMejorCal->setItem(r, 0, rankIt);
+        rankIt->setTextAlignment(Qt::AlignCenter);
+        tblMejorCal->setItem(r,0,rankIt);
 
         // Título (col 1)
-        auto tIt = new QTableWidgetItem(titulo);
+        auto tIt = new QTableWidgetItem(c.getTitulo());
         tIt->setFlags(Qt::ItemIsEnabled);
-        tblMejorCal->setItem(r, 1, tIt);
+        tIt->setTextAlignment(Qt::AlignCenter);
+        tblMejorCal->setItem(r,1,tIt);
 
         // Artista (col 2)
-        auto aIt = new QTableWidgetItem(artista);
+        auto aIt=new QTableWidgetItem(c.getNombreArtista());
         aIt->setFlags(Qt::ItemIsEnabled);
-        tblMejorCal->setItem(r, 2, aIt);
+        aIt->setTextAlignment(Qt::AlignCenter);
+        tblMejorCal->setItem(r,2,aIt);
 
         // ★ Promedio (col 3)
         auto pIt = new QTableWidgetItem(QString::number(avg, 'f', 2));
         pIt->setFlags(Qt::ItemIsEnabled);
-        tblMejorCal->setItem(r, 3, pIt);
+        pIt->setTextAlignment(Qt::AlignCenter);
+        tblMejorCal->setItem(r,3,pIt);
 
         // Votos (col 4)
-        auto vIt = new QTableWidgetItem(QString::number(votos));
+        auto vIt=new QTableWidgetItem(QString::number(votos));
         vIt->setFlags(Qt::ItemIsEnabled);
-        tblMejorCal->setItem(r, 4, vIt);
+        vIt->setTextAlignment(Qt::AlignCenter);
+        tblMejorCal->setItem(r,4,vIt);
 
-        ++r; // ¡ojo! solo incremento cuando realmente pinte una fila valida
+        ++r;
     }
 
-
-    //Completar filas vacias
-    for (; r < TOPN_CAL; ++r)
+    //Completar filas vacias con "—"
+    for(; r<TOPN_CAL; ++r)
     {
+
         auto rankIt = new QTableWidgetItem(QString::number(r + 1));
         rankIt->setFlags(Qt::ItemIsEnabled);
+        rankIt->setTextAlignment(Qt::AlignCenter);
         tblMejorCal->setItem(r, 0, rankIt);
 
-        for (int c = 1; c <= 4; ++c)
+        for(int c=1;c<=4;++c)
         {
-            auto dash = new QTableWidgetItem(QStringLiteral("—"));
+
+            auto dash= new QTableWidgetItem(QStringLiteral("—"));
             dash->setFlags(Qt::ItemIsEnabled);
-            tblMejorCal->setItem(r, c, dash);
+            dash->setTextAlignment(Qt::AlignCenter);
+            tblMejorCal->setItem(r,c,dash);
         }
+
     }
 
-    // --- Promedio de calificación de tus canciones (artista actual) ---
+    // --- Promedio de calificacion de tus canciones (artista actual) ---
     {
 
         const int TOPN_USR_CAL=8;

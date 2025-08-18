@@ -134,24 +134,32 @@ void ControlReproduccion::reproducir(int indice)
 
     if(mapaIndices.isEmpty())construirLista();
 
-    // Si es otro índice: saltar y reproducir
-    if (!actual || indice != indiceActual) {
+    //Si es otro indice: saltar y reproducir
+    if(!actual || indice != indiceActual)
+    {
+
         irANodo(mapaIndices[indice]); // setSource + play + emite señal
         return;
+
     }
 
-    // Mismo índice: asegurarnos de que LA FUENTE esté cargada
-    const bool noMedia = (reproductor->mediaStatus() == QMediaPlayer::NoMedia)
-                         || reproductor->source().isEmpty();
-    if (noMedia) {
+    //Mismo índice: asegurarnos de que LA FUENTE este cargada
+    const bool noMedia = (reproductor->mediaStatus() == QMediaPlayer::NoMedia)|| reproductor->source().isEmpty();
+    if(noMedia)
+    {
+
         // (re)cargar la pista actual y reproducir
         irANodo(mapaIndices[indice]); // setSource + play + emite señal
         return;
+
     }
 
     // Ya hay media: si no está sonando, darle play
-    if (reproductor->playbackState() != QMediaPlayer::PlayingState) {
+    if(reproductor->playbackState() != QMediaPlayer::PlayingState)
+    {
+
         reproductor->play();
+
     }
 }
 

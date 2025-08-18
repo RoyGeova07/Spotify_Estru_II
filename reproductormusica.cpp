@@ -313,7 +313,7 @@ void ReproductorMusica::configurarInterfaz()
         {
 
             escuchadoMsAcum+=tEscucha->interval();
-            if(!habilitaRate&&escuchadoMsAcum>=30'000)
+            if(!habilitaRate&&escuchadoMsAcum>=32'000)
             {
 
                 habilitaRate=true;
@@ -1312,6 +1312,10 @@ void ReproductorMusica::actualizarUIRating(const Cancion &c)
 
         btnCalificar->setEnabled(false);
         btnCalificar->setToolTip(QString("Ya calificaste: %1★").arg(previo));
+        btnCalificar->setStyleSheet(
+            "QPushButton { background-color:#bb2d3b; color:white; border:none;"
+            "padding:6px 12px; border-radius:14px; font-weight:600; }"
+            );//BOTON ROJO, YA CALIFICO
 
     }else{
 
