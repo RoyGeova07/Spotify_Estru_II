@@ -43,6 +43,7 @@ private:
 
     void construirUI();
     void cargarCancionesDelArtista(QVector<Cancion>& singles,QMap<QString, QVector<Cancion>>& eps,QMap<QString, QVector<Cancion>>& albums);
+    QPixmap roundedPixmap(const QPixmap& src, const QSize& size, int radius) const;
     void VolverHome();
 
 };

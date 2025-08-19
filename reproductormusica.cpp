@@ -316,14 +316,33 @@ void ReproductorMusica::configurarInterfaz()
             if(!habilitaRate&&escuchadoMsAcum>=32'000)
             {
 
-                habilitaRate=true;
-                //si no ha calificado esta cancion, habilitar boton
                 const Cancion&c=listaCanciones[indiceActual];
+
+                // si la cancion ya NO esta en el catalogo vigente, NUNCA habilitar rating
+                if(!estaEnCatalogoVigente(c))
+                {
+
+                    habilitaRate=false;
+                    btnCalificar->setEnabled(false);
+                    btnCalificar->setToolTip(
+                        "No puedes calificar: el artista eliminó esta canción de su catálogo."
+                        );
+                    btnCalificar->setStyleSheet(
+                        "QPushButton { background-color:#444; color:#bbb; border:none;"
+                        "padding:6px 12px; border-radius:14px; font-weight:600; }"
+                        "QPushButton:disabled { opacity:0.95; }"
+                        );
+                    return;
+
+                }
+
+                //si no ha calificado esta cancion, habilitar boton
                 GestorCalificaciones gc;
                 quint8 prev=0;
                 if(!gc.yaCalifico(static_cast<quint32>(usuarioActivo.getId()),static_cast<quint32>(c.getId()),&prev))
                 {
 
+                    habilitaRate=true;
                     btnCalificar->setEnabled(true);
                     btnCalificar->setToolTip("Calificar esta cancion (1-5)");
                     btnCalificar->setStyleSheet(
@@ -1271,6 +1290,23 @@ void ReproductorMusica::resetEscuchaYRating()
     {
 
         const Cancion&c=listaCanciones[indiceActual];
+
+        if(!estaEnCatalogoVigente(c))
+        {
+
+            btnCalificar->setEnabled(false);
+            btnCalificar->setToolTip(
+                "No disponible: el artista eliminó esta canción de su catálogo."
+                );
+            btnCalificar->setStyleSheet(
+                "QPushButton { background-color:#444; color:#bbb; border:none;"
+                "padding:6px 12px; border-radius:14px; font-weight:600; }"
+                "QPushButton:disabled { opacity:0.95; }"
+                );
+            return; // no seguimos con 'ya califico'
+
+        }
+
         GestorCalificaciones gc;
         quint8 prev=0;
         if(gc.yaCalifico(static_cast<quint32>(usuarioActivo.getId()),static_cast<quint32>(c.getId()),&prev))
@@ -1291,6 +1327,21 @@ void ReproductorMusica::resetEscuchaYRating()
 
 void ReproductorMusica::actualizarUIRating(const Cancion &c)
 {
+
+    //no permitir calificar si el artista borro la cancion del catalogo
+    if (!estaEnCatalogoVigente(c)) {
+        btnCalificar->setEnabled(false);
+        btnCalificar->setToolTip(
+            "No puedes calificar: el artista eliminó esta canción de su catálogo."
+            );
+        btnCalificar->setStyleSheet(
+            "QPushButton { background-color:#444; color:#bbb; border:none;"
+            "padding:6px 12px; border-radius:14px; font-weight:600; }"
+            "QPushButton:disabled { opacity:0.95; }"
+            );
+        // Aun asi mostrar el promedio existente si lo hubiera:
+    }
+
 
     GestorCalificaciones gc;
     double avg=0.0;int cnt=0;

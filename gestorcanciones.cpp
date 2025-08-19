@@ -62,21 +62,69 @@ QVector<Cancion>GestorCanciones::leerCanciones()
 int GestorCanciones::generarId()
 {
 
-    QVector<Cancion>canciones=leerCanciones();
-    int MaxId=0;
+    int maxId=0;
+    //1) Max en canciones.dat
+    const QVector<Cancion>canciones=leerCanciones();
     for(const Cancion &c:canciones)
-    {
+        if(c.getId()>maxId) maxId=c.getId();
 
-        if(c.getId()>MaxId)
+    //2)Max en reproducciones.dat  [MAGIC/version por registro]
+    {
+        QFile f("reproducciones.dat");
+        if(f.exists()&&f.open(QIODevice::ReadOnly))
         {
 
-            MaxId=c.getId();
+            QDataStream in(&f);
+            in.setVersion(QDataStream::Qt_5_15);
+            while(!in.atEnd())
+            {
+                quint32 magic=0; quint16 ver=0;
+                in>>magic>>ver;
+                if(in.status()!=QDataStream::Ok)break;
+
+                quint32 userId=0, songId=0;
+                quint64 epoch=0;
+                quint32 msPlayed=0,durMs=0;
+                // Orden usado al escribir: userId, songId, epochMs, msPlayed, durMs
+                in>>userId>>songId>>epoch>>msPlayed>>durMs;
+
+                if(in.status()!=QDataStream::Ok)break;
+                if(static_cast<int>(songId)>maxId)maxId=static_cast<int>(songId);
+
+            }
 
         }
-
     }
-    return MaxId+1;
 
+    //3)Max en calificaciones.dat
+    {
+        QFile f("calificaciones.dat");
+        if(f.exists()&&f.open(QIODevice::ReadOnly))
+        {
+
+            QDataStream in(&f);
+            in.setVersion(QDataStream::Qt_5_15);
+            while(!in.atEnd())
+            {
+
+                quint32 magic=0;quint16 ver=0;
+                in>>magic>>ver;
+                if(in.status()!=QDataStream::Ok)break;
+
+                quint32 userId=0, songId=0;
+                quint8 rating=0;
+                quint64 epoch=0;
+                // Orden usado al escribir: userId, songId, rating, epochMs
+                in >> userId >> songId>>rating>>epoch;
+
+                if(in.status() != QDataStream::Ok) break;
+                if(static_cast<int>(songId)>maxId) maxId=static_cast<int>(songId);
+            }
+
+        }
+    }
+
+    return maxId+1;
 }
 
 bool GestorCanciones::CancionDuplicada(const Cancion &NuevaCancion)

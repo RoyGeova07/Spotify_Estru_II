@@ -176,34 +176,33 @@ void VisitaPerfilArtista::construirUI()
                 if(epCanciones.isEmpty())continue;
 
                 QFrame*item=new QFrame();
-                item->setFixedWidth(150);
+                item->setObjectName("Card");
+                item->setFixedWidth(180);
                 item->setStyleSheet(
-                    "QFrame { background:#1a1a1a; border:1px solid #2b2b2b; border-radius:12px; }"
-                    "QFrame:hover { background:#202020; border-color:#1DB954; }"
+                    "#Card { background:#1a1a1a; border:1px solid #2b2b2b; border-radius:16px; padding:8px; }"
+                    "#Card:hover { background:#1c1c1c; border:2px solid #1DB954; }"
                     );
-                QVBoxLayout*vb=new QVBoxLayout(item);
+                QVBoxLayout*vb= new QVBoxLayout(item);
                 vb->setSpacing(8);
                 vb->setAlignment(Qt::AlignCenter);
 
-                QPushButton*btn=new QPushButton();
-                btn->setFixedSize(140,140);
+                QPushButton*btn= new QPushButton();
+                btn->setFixedSize(160,160);
                 btn->setCursor(Qt::PointingHandCursor);
-                btn->setStyleSheet(
-                    "QPushButton{ border:none; background:#222; border-radius:10px; }"
-                    "QPushButton:hover{ border:2px solid #1DB954; }"
-                    );
+                btn->setStyleSheet("QPushButton{ border:none; background:transparent; }");
+
                 QPixmap pix(epCanciones.first().getRutaImagen());
                 if(!pix.isNull())
                 {
 
-                    QPixmap scaled=pix.scaled(btn->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
-                    btn->setIcon(scaled);
+                    btn->setIcon(QIcon(roundedPixmap(pix, btn->size(), 12)));
                     btn->setIconSize(btn->size());
 
                 }else{
 
-                    btn->setText("Sin imagen");
-                    btn->setStyleSheet(btn->styleSheet()+" QPushButton{ color:white; background:#800; }");
+                    QPixmap ph(btn->size()); ph.fill(QColor("#333"));
+                    btn->setIcon(QIcon(roundedPixmap(ph, btn->size(), 12)));
+                    btn->setIconSize(btn->size());
 
                 }
 
@@ -285,34 +284,33 @@ void VisitaPerfilArtista::construirUI()
                 if(albumCanciones.isEmpty())continue;
 
                 QFrame*item=new QFrame();
-                item->setFixedWidth(150);
+                item->setObjectName("Card");
+                item->setFixedWidth(180);
                 item->setStyleSheet(
-                    "QFrame { background:#1a1a1a; border:1px solid #2b2b2b; border-radius:12px; }"
-                    "QFrame:hover { background:#202020; border-color:#1DB954; }"
+                    "#Card { background:#1a1a1a; border:1px solid #2b2b2b; border-radius:16px; padding:8px; }"
+                    "#Card:hover { background:#1c1c1c; border:2px solid #1DB954; }"
                     );
                 QVBoxLayout*vb=new QVBoxLayout(item);
                 vb->setSpacing(8);
                 vb->setAlignment(Qt::AlignCenter);
 
                 QPushButton*btn=new QPushButton();
-                btn->setFixedSize(140,140);
+                btn->setFixedSize(160,160);
                 btn->setCursor(Qt::PointingHandCursor);
-                btn->setStyleSheet(
-                    "QPushButton{ border:none; background:#222; border-radius:10px; }"
-                    "QPushButton:hover{ border:2px solid #1DB954; }"
-                    );
+                btn->setStyleSheet("QPushButton{ border:none; background:transparent; }");
+
                 QPixmap pix(albumCanciones.first().getRutaImagen());
                 if(!pix.isNull())
                 {
 
-                    QPixmap scaled =pix.scaled(btn->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
-                    btn->setIcon(scaled);
+                    btn->setIcon(QIcon(roundedPixmap(pix, btn->size(),12)));
                     btn->setIconSize(btn->size());
 
                 }else{
 
-                    btn->setText("Sin imagen");
-                    btn->setStyleSheet(btn->styleSheet()+" QPushButton{ color:white; background:#800; }");
+                    QPixmap ph(btn->size()); ph.fill(QColor("#333"));
+                    btn->setIcon(QIcon(roundedPixmap(ph, btn->size(),12)));
+                    btn->setIconSize(btn->size());
 
                 }
 
@@ -350,10 +348,9 @@ void VisitaPerfilArtista::construirUI()
 // Helpers
 // ---------------------------------------------------------
 
-QWidget* VisitaPerfilArtista::crearFilaSingles(const QVector<Cancion>& canciones,const QString& tituloFila)
+QWidget* VisitaPerfilArtista::crearFilaSingles(const QVector<Cancion>& canciones, const QString& tituloFila)
 {
-
-    QWidget* seccion=new QWidget();
+    QWidget* seccion = new QWidget();
     seccion->setObjectName("SectionCard");
     seccion->setStyleSheet(
         "#SectionCard { background-color:#151515; border:1px solid #2a2a2a; border-radius:16px; }"
@@ -363,86 +360,75 @@ QWidget* VisitaPerfilArtista::crearFilaSingles(const QVector<Cancion>& canciones
         "#SectionCard QScrollBar::handle:horizontal{ background:#1DB954; border-radius:5px; }"
         "#SectionCard QScrollBar::add-line:horizontal,"
         "#SectionCard QScrollBar::sub-line:horizontal{ width:0px; background:transparent; }"
-    );
+        /* === Estilos de las cards === */
+        "#Card { background:#1a1a1a; border:1px solid #2b2b2b; border-radius:16px; padding:8px; }"
+        "#Card:hover { background:#1c1c1c; border:2px solid #1DB954; }"
+        );
 
-    QVBoxLayout* lay =new QVBoxLayout(seccion);
+    QVBoxLayout* lay = new QVBoxLayout(seccion);
     lay->setContentsMargins(14,12,14,12);
     lay->setSpacing(8);
 
-    QLabel* titulo= new QLabel(tituloFila);
+    QLabel* titulo = new QLabel(tituloFila);
     titulo->setProperty("role","title");
     lay->addWidget(titulo);
 
-    if(canciones.isEmpty())
-    {
-
-        QLabel*vacio=new QLabel("Este artista aun no tiene singles");
+    if (canciones.isEmpty()) {
+        QLabel* vacio = new QLabel("Este artista aun no tiene singles");
         vacio->setStyleSheet("color:#a7a7a7;");
         vacio->setAlignment(Qt::AlignLeft);
         lay->addWidget(vacio);
         return seccion;
-
     }
 
     // Scroll horizontal
     QScrollArea* scrollH = new QScrollArea();
     scrollH->setWidgetResizable(true);
-    scrollH->setFixedHeight(250);
+    scrollH->setFixedHeight(270);
     scrollH->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
     scrollH->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     scrollH->setStyleSheet("QScrollArea { border: none; background: transparent; }");
 
-    QWidget*contenedor=new QWidget();
-    QHBoxLayout*fila=new QHBoxLayout(contenedor);
+    QWidget* contenedor = new QWidget();
+    QHBoxLayout* fila = new QHBoxLayout(contenedor);
     fila->setSpacing(18);
     fila->setContentsMargins(6,10,6,10);
     fila->setAlignment(Qt::AlignLeft);
 
-    for(const Cancion&c:canciones)
+    for (const Cancion& c : canciones)
     {
-
-        QFrame*card=new QFrame();
-        card->setFixedWidth(130);
-        card->setFrameShape(QFrame::Box);
-        card->setStyleSheet(
-            "QFrame { background:#1a1a1a; border:1px solid #2b2b2b; border-radius:12px; }"
-            "QFrame:hover { background:#202020; border-color:#1DB954; }"
-            );
-
-        QVBoxLayout* vb =new QVBoxLayout(card);
+        // === Card contenedora (el borde hover esta aquí, NO en la portada) ===
+        QFrame* card = new QFrame();
+        card->setObjectName("Card");
+        card->setFixedWidth(180);              // card > portada
+        QVBoxLayout* vb = new QVBoxLayout(card);
         vb->setSpacing(8);
         vb->setAlignment(Qt::AlignCenter);
 
-        QPushButton* btn= new QPushButton();
-        btn->setFixedSize(140,140);
+        // === Portada (sin borde; esquinas redondeadas reales) ===
+        QPushButton* btn = new QPushButton();
+        btn->setFixedSize(160,160);
         btn->setCursor(Qt::PointingHandCursor);
-        btn->setStyleSheet(
-            "QPushButton{ border:none; background:#222; border-radius:10px; }"
-            "QPushButton:hover{ border:2px solid #1DB954; }"
-            );
-
+        btn->setStyleSheet("QPushButton{ border:none; background:transparent; }");
 
         QPixmap pix(c.getRutaImagen());
-        if(!pix.isNull())
-        {
-
-            QPixmap scaled=pix.scaled(btn->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
-            btn->setIcon(scaled);
+        if (!pix.isNull()) {
+            btn->setIcon(QIcon(roundedPixmap(pix, btn->size(), 12)));
             btn->setIconSize(btn->size());
-
-        }else{
-
-            btn->setText("Sin imagen");
-            btn->setStyleSheet("color:white; background-color:#800; border-radius:10px;");
-
+        } else {
+            QPixmap ph(btn->size());
+            ph.fill(QColor("#333"));
+            btn->setIcon(QIcon(roundedPixmap(ph, btn->size(), 12)));
+            btn->setIconSize(btn->size());
         }
 
-        QLabel* lblTitulo =new QLabel(c.getTitulo());
+        // Texto
+        QLabel* lblTitulo=new QLabel(c.getTitulo());
         lblTitulo->setStyleSheet("color:#fff; font-weight:700;");
         lblTitulo->setAlignment(Qt::AlignCenter);
         lblTitulo->setWordWrap(true);
 
-        QLabel*lblArt = new QLabel(c.getNombreArtista());
+        QLabel* lblArt = new QLabel(c.getNombreArtista());
         lblArt->setStyleSheet("color:#a7a7a7; font-size:12px;");
         lblArt->setAlignment(Qt::AlignCenter);
         lblArt->setWordWrap(true);
@@ -516,6 +502,24 @@ void VisitaPerfilArtista::cargarCancionesDelArtista(QVector<Cancion>& singles,QM
             break;
         }
     }
+}
+
+QPixmap VisitaPerfilArtista::roundedPixmap(const QPixmap& src, const QSize& size, int radius) const
+{
+    QPixmap scaled = src.scaled(size, Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation);
+    QPixmap out(size);
+    out.fill(Qt::transparent);
+
+    QPainter p(&out);
+    p.setRenderHint(QPainter::Antialiasing);
+
+    QPainterPath path;
+    path.addRoundedRect(QRect(0,0,size.width(), size.height()), radius, radius);
+    p.setClipPath(path);
+    p.drawPixmap(0,0,scaled);
+
+    p.end();
+    return out;
 }
 
 void VisitaPerfilArtista::VolverHome()

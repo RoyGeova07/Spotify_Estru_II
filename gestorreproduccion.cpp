@@ -139,7 +139,7 @@ EstadisticasUsuario GestorReproduccion::statsUsuario(quint32 userId, int topN) c
     for (const auto& ev : all)
     {
         if (ev.userId != userId) continue;
-        if (!activas.contains(ev.songId)) continue;           // ⟵ IGNORA canciones borradas
+        if (!activas.contains(ev.songId)) continue;//IGNORA canciones borradas
 
         st.totalMs += ev.msPlayed;                            // tiempo (incluye parciales)
         if (cuentaComoEscucha(ev.msPlayed, ev.durMs))
@@ -192,13 +192,13 @@ EstadisticasGlobales GestorReproduccion::statsGlobales(int topN) const
 
     for (const auto& ev : all)
     {
-        if (!activas.contains(ev.songId)) continue; // ⟵ IGNORA eventos de canciones borradas
+        if (!activas.contains(ev.songId)) continue;
 
         const bool valida = cuentaComoEscucha(ev.msPlayed, ev.durMs);
-        if (valida) porCancion[ev.songId] += 1;
-
-        // Actividad de usuarios: cuenta el evento solo si la canción está vigente
-        porUsuario[ev.userId] += 1;
+        if (valida) {
+            porCancion[ev.songId] += 1;
+            porUsuario[ev.userId] += 1;   // << antes contabas TODO evento
+        }
     }
 
     // Ordenar y recortar topN (igual que antes)...
